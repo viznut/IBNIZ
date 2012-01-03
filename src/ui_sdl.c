@@ -583,7 +583,12 @@ void ed_deleteselection()
     else if(ed.cursor>ed.selectstart) ed.cursor=ed.selectstart;
 
   s=ed.selectstart;
-  while(s<=ed.selectend) *s++=s[gap];
+  for(;;)
+  {
+    char a=s[gap];
+    *s++=a;
+    if(!a)break;
+  }
 
   ed_unselect();
 }
