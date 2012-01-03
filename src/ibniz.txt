@@ -1,0 +1,471 @@
+
+Compilation in Unix-like systems that have GCC and SDL installed: make
+
+This documentation represents IBNIZ version 1.1 released on 2011-12-27.
+The distribution licence is the "zlib/libpng licence" (see licence.txt).
+
+=== OVERVIEW ===
+
+IBNIZ is a virtual machine designed for extremely compact low-level
+audiovisual programs. The leading design goal is usefulness as a platform
+for demoscene productions, glitch art and similar projects. Mainsteam
+software engineering aspects are considered totally irrelevant.
+
+IBNIZ stands for Ideally Bare Numeric Impression giZmo. The name also refers
+to Gottfried Leibniz, the 17th-century polymath who, among all, invented
+binary arithmetic, built the first four-operation calculating machine, and
+believed that the world was designed with the principle that a minimal set
+of rules should yield a maximal diversity.
+
+The IBNIZ virtual machine is basically a two-stack machine somewhat similar
+to Forth implementations but with the major difference that the stack is
+cyclical and also used as output buffer. The machine runs in an endless loop
+by default, with the loop counter variable(s) pushed on top of the stack on
+every loop cycle.
+
+Each instruction is one character long, with the exception of 'loadimm'
+which consists of a string of hexadecimal digits. This also gives IBNIZ some
+flavor of an esoteric programming language.
+
+NOTE: IBNIZ has not been fully defined or implemented yet! Anything
+mentioned in this document may change (although major changes are unlikely).
+
+=== QUICK TUTORIAL ===
+
+The primary implementation of IBNIZ is interactive. You can edit the code
+like in a normal text editor, start/pause it with f1 and restart it with f2.
+
+The simplest example program is the empty program; it uses the loop
+variables directly as pixel values and audio data.
+
+A slightly longer example program would be:
+
+        ^xp
+
+Which consists of three operations: ^ (xor), x (exchange) and p (pop).
+
+In the default video context mode ("TYX-video"), the machine pushes the
+variables T, Y and X on top of the main stack on every loop cycle.
+
+The first opcode (xor) replaces the two topmost values on the stack (Y and
+X) with their exclusive OR (Y XOR X).
+
+The next opcode is (exchange) corresponds to Forth's SWAP. It swaps the
+topmost values on the stack. So, after this operation, T is on top of the
+stack and Y XOR X is under it.
+
+The last opcode, 'pop' ('p') corresponds to Forth's DROP and moves the stack
+pointer so that the value on top of the stack gets 'popped off'. So, after
+the execution of the three instructions '^xp', the values T Y X have been
+transformed into Y XOR X.
+                        
+Whatever data remains in the stack is interpreted as pixel colors in the YUV
+colorspace (bit format VVUU.YYYY; thus, the integer part roughly corresponds
+to hue and the fraction part to intensity). As the range of X and Y is
+between -1.0 and +1.0 (FFFF.0000 .. 0000.FFFF), the picture resulting from
+X XOR Y will have a full intensity range but the only hues are 0000 (pure
+gray) and FFFF (nearly pure gray). The unit for T, by the way, is 1/60
+seconds.
+
+The video stack is two video pages long. The visible page is flipped every
+time the stack pointer passes a page boundary.
+
+An audio example:
+
+        d3r15&*
+
+In the audio context, only one value (T) is pushed on top of stack on each
+loop cycle. The first opcode 'd' duplicates it, 3r rotates the duplicate
+right by three bits, 15& ands it with hex number 15 (decimal 21) and *
+multiplies the result with the original T.
+
+In the audio context, T has the same rate as in video mode; the integer part
+increments 60 times per seconds. However, the fraction part is also used
+(resulting in a theoretical maximum sample rate of nearly 4 MHz). Of the
+values left on stack, only the fraction part is used. It is interpreted as a
+16-bit unsigned linear PCM value. Regardless of the actual sampling rate of
+the implementation, the audio stack is one second long.
+
+IBNIZ always tries to execute programs simultaneously in video and audio
+contexts. There are two different modes for the video context: the
+previously-mentioned TYX-video (which pushes T Y X on every loop as three
+separate numbers) and T-video (which combines these variables in a single
+value). IBNIZ automatically detects the correct mode by stack usage.
+
+It is possible to separate video and audio calculation using the
+'mediaswitch' opcode ('M'). The execution of these separate program portions
+is scheduled by VM-level logic: in normal cases, the video context loop is
+run 64 times per audio context loop cycle.
+
+        *x~FF&* M d3r15&*
+
+IBNIZ is a universal programming language, not just an expression evaluator.
+The secondary stack (return stack or "rstack") makes it possible to
+implement advanced program control features such as loops, subroutines and
+recursion. It is also possible to ignore the exterior loop altogether and
+write to the buffers like to any random access memory as well as to read
+user input and to have a separate data segment for any arbitrary data.
+
+=== TECHNICAL NUMBERS** ===
+
+Technical specs of the default configuration:
+
+Word width: 32 bits (arithmetic in 16.16 fixed-point)
+Address space: 2^20 words (4 megabytes, ~3 of which free user RAM)
+Video output: 256x256 pixels at 60 Hz, 32 bits per pixel (VVUU.YYYY)
+Audio output: 61440 Hz mono (30720 Hz stereo), 16 bits per sample
+Computation speed: not defined yet (fully depends on underlying hardware)
+
+=== FULL INSTRUCTION SET ===
+
+Everything is case-sensitive here!
+
+NUMBERS
+
+        symbol  name    stack
+        ------  ----    -----
+        0-F.    loadimm (-- val)
+
+        The basic numeric type is the 32-bit fixed-point number, divided
+        into 16 bits of integer and 16 bits of fraction.
+
+        The number format in the source code is upper-case hexadecimal using
+        the digits 0-9 and A-F. The separator '.' can be used to separate
+        the fraction part from the integer part.
+
+        Several immediate numbers can be separated with a blank or comma
+        (',').
+
+ARITHMETIC
+
+        symbol  name    stack
+        ------  ----    -----
+        +       add     (a b -- a+b)
+        -       sub     (a b -- a-b)
+        *       mul     (a b -- a*b)
+        /       div     (a b -- a/b, 0 if b==0)
+        %       mod     (a b -- a MOD b, 0 if b==0)
+        q       sqrt    (a -- square root of a; 0 if a<0)
+
+        &       and     (a b -- a AND b)
+        |       or      (a b -- a OR b)
+        ^       xor     (a b -- a XOR b)
+        r       right   (a b -- a ROR b)
+        l       left    (a b -- a << b)
+        ~       neg     (a -- NOT a)
+
+        s       sin     (a -- sin(a*2PI))
+        a       atan    (a b -- atan2(a,b)/2PI)
+
+        <       isneg   (a -- a if a<0, else 0)
+        >       ispos   (a -- a if a>0, else 0)
+        =       iszero  (a -- 1 if a==0, else 0)
+
+        All numbers used in arithmetic are interpreted as signed 16+16-bit
+        fixed-point values (negative numbers in two's complement).
+
+        The modulus (%) uses fractions.
+
+STACK MANIPULATION
+
+        symbol  name            stack            description
+        ------  ----            -----            ----------
+        d       dup             (a -- a a)
+        p       pop             (a --)           same as Forth's DROP
+        x       exchange        (a b -- b a)     same as Forth's SWAP
+        v       trirot          (a b c -- b c a) same as Forth's ROT
+        )       pick            (i -- val)       load value from STACK[top-1-i]
+        (       bury            (val i --)       store value to STACK[top-2-i]
+
+        The operations 'pick' and 'bury' and 'movesp' are always wrapped
+        within the stack range.
+
+        The symbol 'v' was chosen because it resembles a triangle.
+
+EXTERIOR LOOP
+
+        symbol  name            description
+        ------  ----            -----------
+        M       mediaswitch     switches between audio and video context
+        w       whereami        pushes exterior loop variable(s) on stack
+        T       terminate       stops program execution
+
+        The execution starts in the video context. When the execution wraps
+        from the end of the program to the beginning, the VM implicitly
+        executes 'mediaswitch' and 'whereami'.
+
+        The loop variables pushed by 'whereami' depend on the stack pointer
+        and internal video/audio frame counters. The exact operation,
+        depending on context and mode, is as follows:
+
+        context  mode  pushes on stack
+        -------  ----  ---------------
+        video    TYX   TTTT.0000, YYYY.YYYY, XXXX.XXXX
+                       where
+                       - YYYY.YYYY and XXXX.XXXX are between -1 and +1
+                         (FFFF.0000 and 0000.FFFF)
+                       - TTTT is the frame counter (time in 60ths of second)
+
+        video    T     TTTT.YYXX
+                       where
+                       - TTTT is the frame counter
+                       - YY and XX range from 00 to FF (directly from SP)
+
+        audio    T     TTTT.TTTT
+                       where
+                       - the integer is the frame counter (same as in video)
+                       - the fraction is, well, the 65536th part thereof
+
+        The current implementation changes the video context mode
+        automatically based on stack balance and how many times 'whereami'
+        is called.
+
+MEMORY MANIPULATION
+
+        symbol  name    stack
+        ------  ----    -----
+        @       load    (addr -- val)
+        !       store   (val addr --)
+
+        All the memory is addressed in 32-bit-wide chunks. There is no
+        byte-level operation.
+
+        The fractional part of the memory address is interpreted as the high
+        part of the logical address. (e.g. 1234.FFFF refers to the address
+        FFFF1234).
+
+        In the default configuration, the top 12 bits of the address are
+        ignored (thus, the actual address in the previous example is F1234). 
+        The total address space is therefore 1 megaword == 4 megabytes. It
+        is divided as follows:
+
+        00000 - BFFFF   free for user data
+        C0000 - C7FFF   reserved for internal registers, code, etc.
+        C8000 - CBFFF   return stack for audio context
+        CC000 - CFFFF   return stack for video context
+        D0000 - DFFFF   audio stack
+        E0000 - EFFFF   video stack page 0
+        F0000 - FFFFF   video stack page 1
+
+PROGRAM CONTROL
+
+   Conditional execution
+
+        symbol  name    description
+        ------  ----    -----------
+        ?       if      (cond --) ; if cond==0, skip until 'else' or 'endif'
+        :       else    skip until after next 'endif'
+        ;       endif   nop; marks end of conditional block when skipping
+
+        End of code is also regarded as a skip terminator in all cases.
+
+   Loops
+
+        symbol  name    description
+        ------  ----    -----------
+        X       times   (i0 --) loop i0 times (push i0 and insptr on rstack)
+        L       loop            decrement RSTACK[top-1], jump back if non-0
+        i       index	(-- i)  load value from RSTACK[top-1]
+        j       outdex	(-- j)  load value from RSTACK[top-3]
+        [       do              begin loop (push insptr on rstack)
+        ]       while (cond --) jump back if cond!=0
+        J       jump    (v --)  set instruction pointer to value v
+
+        Examples of loop constructs:
+
+        100X 3i@L       stores the number '3' to addresses 1..100
+        [1r dA0-<]      shifts number right until it is below A0
+
+        The jump instruction (like all ops that manipulate instruction
+        pointer directly) wraps around the code length (it is not possible
+        to jump outside the program space). As the internal encoding of
+        programs has not been defined yet, the exact addresses of the
+        instructions are implementation-dependent.
+
+        The times-loop counters (i and j) are regarded as 32-bit unsigned
+        integers in the same way as memory addresses (.0001 = 10000). Thus,
+        times-loops with more than 65535 steps are possible.
+
+   Subroutines
+
+        symbol  name    stack   description
+        ------  ----    -----   -----------
+        {       defsub  (i --)  define subroutine (store pointer to MEM[i])
+        }       return          end of subroutine; pop insptr from rstack
+        V       visit   (i --)  visit subroutine pointed to by MEM[i]
+
+        The return stack is used for storing the return addresses when
+        visiting subroutines.
+
+        Defsub ('{') stores the address of the next instruction to the
+        memory address given by the value on top of stack and then skips
+        instructions until '}' or end-of-code is reached.
+
+   Return stack manipulation
+
+        symbol	name    stack      rstack       description
+        ------	----    -----      ------       -----------
+        R       retaddr (-- val)   (val --)     moves from rstack to stack
+        P       pushtors (val --)  (-- val)     moves from stack to rstack
+
+        The return stack is cyclical just like the main stack.
+
+INPUT
+
+        symbol  name    stack           description
+        ------  ----    -----           ------------
+        U       userin  (-- inword)     get data from input device
+
+        The 'userin' instruction polls data from the input device.
+        It returns a word in the format MMKK.YYXX where:
+        - YYXX indicates the last known position, in unsigned coordinates,
+          of the pointing device (mouse, touch, lightpen, etc.)
+        - KK indicates the unicode number of the last character entered on
+          keyboard, or 0 if no character is entered. If the unicode number
+          is above FF, it is wrapped to between 00 and FF. The value is
+          cleared to zero (or the next character in the buffer) whenever 'U'
+          is used.
+        - MM is a bit structure indicating the state of click/state and a
+          couple of keyboard keys. Bits from top to bottom:
+          80: click state (1 when a screen position is being clicked/touched)
+          40: ctrl key (1 = down)
+          20: alt/meta key
+          10: shift key
+          08: cursor up key
+          04: cursor down key
+          02: cursor left key
+          01: cursor right key
+
+DATA SEGMENT
+
+        symbol  name            description
+        ------  ----            -----------
+        G       getdata         (numbits -- data)
+        $       startdata       end code segment, start data segment
+
+        A "data segment" containing arbitrary binary data can be defined
+        after the program code. Startdata ($) ends the code segment and
+        starts the data segment.
+
+        When a program is started, the memory is filled with the contents of
+        the data segment without any alignment.
+
+        Getdata ('G') can be used for reading the data segment sequentially.
+        It fetches the given number of next bits from the data segment. When
+        it runs out of data, it wraps back to the beginning.
+
+        In the source code, the data is encoded as digits that represent 1-4
+        bits in the memory. The following symbols are available:
+
+        symbol	name            description
+        ------	----            -----------
+        0-F     data            encodes a digitful (1-4 bits) of data.
+	b       binary	        sets digit length to 1 bit
+        q       quarternary     sets digit length to 2 bits
+        o       octal           sets digit length to 3 bits
+        h       hexadecimal     sets digit length to 4 bits (default)
+
+META
+
+        symbol  name    desc
+        ------  ----    ----
+        \       comment ignore characters in source code until newline
+        ,       blank   nop; also whitespaces and newlines count as blank
+
+=== PRIMARY IMPLEMENTATION ===
+
+EDITOR COMMANDS
+
+        Tab toggles the editor display on/off. When the editor is hidden,
+        keyboard commands don't affect the editor state.
+
+        Cursor keys etc. work as expected. Shift+cursor selects an area.
+
+        Ctrl+up/down increments/decrements the number under cursor, with
+        carry.
+
+        Ctrl+left/right jumps to the final character of the previous or next
+        "word" (i.e. blank-separated section).
+
+        f1 runs and pauses the code.
+
+        f2 resets the VM state (including timer and memory).
+
+        Changes to the source code automatically recompile it but do not
+        restart it. This makes it convenient to do runtime changes to
+        numeric parameters etc. This functionality may change in the future.
+
+        ESC exits the program.
+
+        Ctrl+C/X/V/A work as copy/cut/paste/selectall.
+
+        Ctrl+S saves the program to the file indicated by a line beginning
+        with '\#file' (or if there's no such line, inserts the line
+        '\#file untitled.ib' and uses untitled.ib as the filename.
+        The '\#file' lines are automatically skipped when saving.
+
+COMMAND LINE OPTIONS
+
+       -h       Dump help on command line usage
+       -v       Dump version info
+       -c CODE  Execute code
+       -n       No autorun of loaded code
+
+       The following extra options were added for creating the YouTube
+       video:
+
+       -e       Dump user keystrokes to stdout
+       -p       Playback dumped user keystrokes from stdin
+       -M       Dump raw video to stdout and raw audio to stderr.
+                30 fps, non-realtime, yuv4mpeg2 and pcm_s16.
+
+       Some commands used in this process, for reference:
+
+       ./ibniz -e > events
+
+       ./ibniz -M -p < events 2>vid.pcm | ffmpeg -y -i - -r 30 vid.avi
+
+       ffmpeg -i vid.avi -f s16le -ar 44100 -ac 1 \
+       -i vid.pcm -vcodec copy vidav.avi
+
+=== CHANGES ===
+
+1.1000
+- Cut/copy/paste implemented, with system clipboard support on X11 and W32.
+- VM no longer eats up all CPU time if less is enough for 60 fps.
+- Possibility to hide on-screen display (with autohide on autorun)
+- Scrolling and buffer size limit check in the editor
+- More examples included in the distribution package
+- Help screen implemented
+
+1.2000 (TODO!)
+- Analyzer; execution speed increase
+  - for interpreter: pseudo-opcodes to separate y-loop and t-loop
+  - for compiler
+
+ (CSE fix to interpreted code)
+- Status panel, UI mouse support, speed change
+
+- Some more examples
+- Test cases 
+
+=== FUTURE ===
+
+In an approximate order of priority:
+- Fix problems that prevent IBNIZ from working in some systems
+- Fix other known bugs
+- On-screen machine status info
+- Improve execution speed with static code analysis and native compilation
+- Support resolution reduction etc for slow code/machines
+- Remove MSVC library dependency from Win32 build
+- Make it possible to limit execution speed
+- Make internal registers user-accessible
+- Implement IBNIZ as a website
+- Native Win32 version (without MSVC library or the statically linked SDL)
+- Define and implement a compact bitwise machine code
+- Allow self-modifying code
+- Support threading, shaders etc.
+- Native version for MS-DOS, ibniz-to-c64 compiler etc.
+
+Once we have all of these, we may call the version number 2.0.
+
