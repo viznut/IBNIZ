@@ -2,6 +2,10 @@
 #include <stdio.h>
 #include "ibniz.h"
 
+void waitfortimechange()
+{
+}
+
 uint32_t gettimevalue()
 {
   return 0;
