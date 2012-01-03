@@ -1,0 +1,33 @@
+C  = gcc
+EXE = ibniz
+SRC = ui_sdl.c vm_slow.c clipboard.c
+OBJ = $(SRC:.c=.o)
+
+CFLAGS  = -O2 -Wall `sdl-config --cflags`
+LDFLAGS = -lm `sdl-config --libs` -framework Cocoa
+
+all: $(EXE)
+
+$(EXE): $(OBJ)
+	$(CC) $(OBJ) $(LDFLAGS) -o $@
+
+vmtest: $(OBJ) vm_test.o
+	$(CC) $(OBJ) vm_test.o $(LDFLAGS) -o $@
+
+.c.o:
+	$(CC) -c $(CFLAGS) $< -o $@
+
+clean:
+	rm -f *.o *~ ibniz vmtest
+
+ui_sdl.o: ui_sdl.c ibniz.h font.i vm.h texts.i
+
+clipboard.o: clipboard.c ibniz.h
+
+vm_slow.o: vm_slow.c ibniz.h vm.h
+
+font.i: font.pl
+	perl font.pl > font.i
+
+runtest: vmtest
+	./vmtest
