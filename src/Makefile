@@ -17,7 +17,7 @@ package: clean
 	cd .. && cp -R src ibniz-1.18 && tar czf ibniz-1.18.tar.gz ibniz-1.18
 
 winexe: clean
-	mkdir ../winbuild && cp * ../winbuild && cd ../winbuild && make -f Makefile.win
+	cp * ../winbuild && cd ../winbuild && make -f Makefile.win
 
 #$(EXE): whole.c
 #	$(CC) -s -O3 -ffast-math -fwhole-program whole.c -o $(EXE) $(FLAGS) -lm

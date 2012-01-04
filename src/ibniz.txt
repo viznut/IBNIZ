@@ -1,7 +1,7 @@
 
 Compilation in Unix-like systems that have GCC and SDL installed: make
 
-This documentation represents IBNIZ version 1.2 released on 2012-01-XX.
+This documentation represents IBNIZ version 1.18 released on 2012-01-04.
 The distribution licence is the "zlib/libpng licence" (see licence.txt).
 
 === OVERVIEW ===

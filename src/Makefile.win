@@ -9,12 +9,15 @@ clean:
 
 package: clean
 	cd .. && cp -R IBNIZ ibniz-1.2 && tar czf ibniz-1.2.tar.gz ibniz-1.2
-	
-$(EXE): whole.c
-	$(CC) -s -O3 -ffast-math -fwhole-program whole.c -o $(EXE) $(FLAGS) -lm
 
-whole.c: vm_slow.c ui_sdl.c clipboard.c texts.i font.i vm.h ibniz.h
-	cat ui_sdl.c vm_slow.c clipboard.c > whole.c
+$(EXE): ui_sdl.o vm_slow.o clipboard.o
+	$(CC) -Os -s ui_sdl.o vm_slow.o clipboard.o -o $(EXE) $(FLAGS) -lm
+
+#$(EXE): whole.c
+#	$(CC) -s -O3 -ffast-math -fwhole-program whole.c -o $(EXE) $(FLAGS) -lm
+
+#whole.c: vm_slow.c ui_sdl.c clipboard.c texts.i font.i vm.h ibniz.h
+#	cat ui_sdl.c vm_slow.c clipboard.c > whole.c
 
 ui_sdl.o: ui_sdl.c ibniz.h font.i vm.h texts.i vm.h
 	$(CC) -c -Os ui_sdl.c -o ui_sdl.o $(FLAGS)
