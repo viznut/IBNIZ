@@ -14,7 +14,7 @@ clean:
 	rm -f *.o *~ ibniz vmtest ibniz.exe whole.c
 
 package: clean
-	cd .. && cp -R IBNIZ ibniz-1.2 && tar czf ibniz-1.2.tar.gz ibniz-1.2
+	cd .. && cp -R src ibniz-1.2 && tar czf ibniz-1.2.tar.gz ibniz-1.2
 
 winexe: clean
 	mkdir ../winbuild && cp * ../winbuild && cd ../winbuild && make -f Makefile.win
