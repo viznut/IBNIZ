@@ -31,3 +31,4 @@ font.i: font.pl
 
 runtest: vmtest
 	./vmtest
+

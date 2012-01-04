@@ -506,18 +506,11 @@ v7rs6ldv*vv*7&@xr.8&$b
 - More examples included in the distribution package
 - Help screen implemented
 
-1.2000 (already there)
+1.1800
 - Clipboard bugs fixed, window icon added
+- Machine status panel implemented
 
 === FUTURE ===
-
-1.2000 (TODO!)
-- Include a machine status panel
-
-1.3000 (TODO!)
-- Analyzer; execution speed increase
-  - for interpreter: pseudo-opcodes to separate y-loop and t-loop
-  - for compiler
 
 Tasks in an approximate order of priority:
 - Fix problems that prevent IBNIZ from working in some systems

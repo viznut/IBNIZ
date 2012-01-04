@@ -14,8 +14,11 @@ clean:
 	rm -f *.o *~ ibniz vmtest ibniz.exe whole.c
 
 package: clean
-	cd .. && tar czf ibniz-1.1.tar.gz ibniz-1.1/
-	
+	cd .. && cp -R IBNIZ ibniz-1.2 && tar czf ibniz-1.2.tar.gz ibniz-1.2
+
+winexe: clean
+	mkdir ../winbuild && cp * ../winbuild && cd ../winbuild && make -f Makefile.win
+
 #$(EXE): whole.c
 #	$(CC) -s -O3 -ffast-math -fwhole-program whole.c -o $(EXE) $(FLAGS) -lm
 
@@ -23,7 +26,7 @@ package: clean
 #	cat ui_sdl.c vm_slow.c clipboard.c > whole.c
 
 $(EXE): ui_sdl.o vm_slow.o clipboard.o
-	$(CC) -Os ui_sdl.o vm_slow.o clipboard.o -o $(EXE) $(FLAGS) -lm
+	$(CC) -Os -s ui_sdl.o vm_slow.o clipboard.o -o $(EXE) $(FLAGS) -lm
 
 ui_sdl.o: ui_sdl.c ibniz.h font.i vm.h texts.i vm.h
 	$(CC) -c -Os ui_sdl.c -o ui_sdl.o $(FLAGS)
