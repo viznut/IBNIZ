@@ -31,6 +31,7 @@ GLOBAL struct
   uint32_t audiotime;
   
   uint32_t prevsp[2];
+  uint32_t prevstackval[2];
   int      currentwcount[2];
 
   int16_t  spchange[2];

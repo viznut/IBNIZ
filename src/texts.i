@@ -36,7 +36,6 @@ char*helpscreen=
 "ctrl+left/right . jump by words "
 "ctrl+up/down .... inc/dec number"
 "ctrl+x/c/v ...... cut/copy/paste"
-"ctrl+b .......... benchmark mode"
 "\n"
 "======== IBNIZ language ========"
 "\n"

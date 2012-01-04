@@ -28,6 +28,8 @@ struct
   char audio_off;
   char osd_visible;
   char benchmark_mode;
+  float mops;
+  float fps;
 
   char opt_dumpkeys;
   char opt_nonrealtime;
@@ -112,9 +114,9 @@ void drawTextBuffer()
       fg=0x000000; bg=0xffffff;
       if(y<0) scroll=-y;
       else
-      if(y>=32) scroll=31-y;
+      if(y>=28) scroll=27-y;
     }
-    if(y>=0 && y<32)
+    if(y>=0 && y<28)
     {
       drawChar8x8( ((uint8_t*)(sdl.o->pixels[0]))+x*16+y*WIDTH*16,
         font+(a>=32?a-32:0)*8,fg,bg);
@@ -130,6 +132,69 @@ void drawTextBuffer()
     b++;
   }
   ed.firsty+=scroll;
+}
+
+void drawString(char*s,int x,int y)
+{
+  int fg=0xffffff;
+  int bg=0x000000;
+  while(*s)
+  {
+    int a=*s;
+    drawChar8x8( ((uint8_t*)(sdl.o->pixels[0]))+x*16+y*WIDTH*16,
+      font+(a>=32?a-32:0)*8,fg,bg);
+    s++;
+    x++;
+  }
+}
+
+void drawStatusPanel()
+{
+  char buf[24];
+  int sgn,spc;
+  uint32_t a;
+  sprintf(buf,"T=%04X",gettimevalue()&0xFFFF);
+  drawString(buf,0,28);
+  if(ui.runstat)
+  {
+    if(ui.mops>0)
+    {
+      sprintf(buf,"%3.3f Mops%c",ui.mops,
+        ui.benchmark_mode?'!':' ');
+      drawString(buf,0,30);
+    }
+    if(ui.fps>0)
+    {
+      sprintf(buf,"%2.4f fps",ui.fps);
+      drawString(buf,0,31);
+    }
+  }
+  
+  spc=vm.spchange[0];
+  sgn='+';
+  if(spc<0) { sgn='-'; spc=0-spc; }
+  if(spc>15) spc=15;
+  sprintf(buf,"VIDEO S=%05X (%c%X)",vm.prevsp[0]&0x1FFFF,sgn,spc);
+  drawString(buf,13,28);
+  drawString(vm.videomode?"t":"tyx",13,29);
+
+  a=vm.prevstackval[0];
+  sprintf(buf,"%04X.%04X",(a>>16)&0xFFFF,a&0xFFFF);
+  drawString(buf,21,29);
+
+  spc=vm.spchange[1];
+  sgn='+';
+  if(spc<0) { sgn='-'; spc=0-spc; }
+  if(spc>15) spc=15;
+  sprintf(buf,"AUDIO S=%05X (%c%X)",vm.prevsp[1]&0x1FFFF,sgn,spc);
+  drawString(buf,13,30);
+
+  drawString(ui.audio_off?"off":
+    (vm.audiomode?"ster":"mono"),13,31);
+
+  a=vm.prevstackval[1];
+  sprintf(buf,"%04X.%04X",(a>>16)&0xFFFF,a&0xFFFF);
+  drawString(buf,21,31);
 }
 
 void showyuv()
@@ -167,6 +232,7 @@ void updatescreen()
   if(ui.osd_visible)
   {
     drawTextBuffer();
+    drawStatusPanel();
   }
   showyuv();
 }
@@ -654,8 +720,7 @@ void ed_char(int ascii)
       if(s>=ed.textbuffer+EDITBUFSZ) return;
       for(;s>=ed.cursor;s--)s[1]=*s;
     }
-    // todo: check out-of-memory
-        
+
     *ed.cursor++=ascii;
   }
 }
@@ -751,15 +816,14 @@ void interactivemode(char*codetoload)
         if(ui.opt_nonrealtime) nrtframestep();
       }
     }
-    if((t>=120+ui.bmtime) && ui.benchmark_mode)
+    if(t>=120+ui.bmtime)
     {
       float secs=(t-ui.bmtime)/60.0;
-      fprintf(stderr,"%f cps, %f fps\n",
-        ui.cyclecounter/secs,ui.framecounter/secs);
+      ui.mops=ui.cyclecounter/(secs*1000000);
+      ui.fps=ui.framecounter/secs;      
       ui.cyclecounter=ui.framecounter=0;
       ui.bmtime=t;
     }
-
     if(ui.runstat==0)
     {
       if(!ui.opt_playback)
@@ -794,10 +858,7 @@ void interactivemode(char*codetoload)
         }
         {
           int c = vm_run();
-          if(ui.benchmark_mode)
-          {
-            ui.cyclecounter+=c;
-          }
+          ui.cyclecounter+=c;
         }
         if(ui.opt_nonrealtime)
         {
@@ -846,6 +907,7 @@ void interactivemode(char*codetoload)
         } else
         {
           ui.timercorr+=getticks()-ui.paused_since;
+          ui.mops=ui.fps=ui.bmtime=0;
         }
       }
       else
@@ -960,15 +1022,20 @@ void interactivemode(char*codetoload)
             ed.selectbase=ed.cursor;
           }
         }
+        /*
         else
         if(sym=='b' && (mod&KMOD_CTRL))
         {
           ui.benchmark_mode^=1;
         }
+        */
         else
         {
-          ed_char(e.key.keysym.unicode);
-          codechanged=1;
+          if(e.key.keysym.unicode)
+          {
+            ed_char(e.key.keysym.unicode);
+            codechanged=1;
+          }
         }
       }
     }

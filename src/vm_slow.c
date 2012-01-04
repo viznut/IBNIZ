@@ -291,7 +291,7 @@ void stepmediacontext(int skippoint,int at_eoc)
   vm.wcount[vm.mediacontext]=vm.currentwcount[vm.mediacontext];
   vm.currentwcount[vm.mediacontext]=0;
   vm.prevsp[vm.mediacontext]=vm.sp;
-
+  vm.prevstackval[vm.mediacontext]=vm.stack[vm.sp];
   if(vm.mediacontext==vm.preferredmediacontext)
   {
     //if(vm.rsp==0)
@@ -359,11 +359,12 @@ void pushmediavariables()
   }
 }
 
+#define CYCLESPERRUN 10223
 int vm_run()
 {
   int cycles;
   if(vm.stopped) return 0;
-  for(cycles=10240;cycles;cycles--)
+  for(cycles=CYCLESPERRUN;cycles;cycles--)
   {
     char op=*vm.ip++;
     int32_t*a=&vm.stack[vm.sp],*b;
@@ -541,7 +542,7 @@ int vm_run()
       case('T'):	// terminate program
         vm.ip--;
         vm.stopped=1;
-        return 10240-cycles;
+        return CYCLESPERRUN-cycles;
 
       /*** MEMORY MANIPULATION ***/
 
@@ -653,5 +654,5 @@ int vm_run()
         break;
     }
   }
-  return 10240;
+  return CYCLESPERRUN;
 }
