@@ -428,6 +428,74 @@ COMMAND LINE OPTIONS
        ffmpeg -i vid.avi -f s16le -ar 44100 -ac 1 \
        -i vid.pcm -vcodec copy vidav.avi
 
+=== EXAMPLES ===
+
+\ 2-character programs:
+*d \ TV noise (without sound)
+** \ Mul-texture zoomer
+9/ \ Flasher
++/ \ "Jupiter storm"
++% \ "Jupiter storm" in B&W
+/% \ Perspective mapper
+&* \ Sierpinski epilepsy
+qs \ Polyrhythmic flasher slowing down
+)~ \ Sliding-down squarewave
+
+\ "42 melody"
+d3r15&*
+
+\ Plasma
+sv5rvs--
+
+\ Munching squares with a Sierpinski harmony
+^x7r+Md8r&
+
+\ Xor texture zoomer
+v8rsdv*vv*^
+
+\ Music from the video
+d6r|5*wdAr&+
+
+\ "Opening gate" (from FreeFull)
+8rw10r%w18r%
+
+\ "Spinny" (from FreeFull)
+sxsaxAr+waxBr+^
+
+\ Munching squares zoomer
+v8rsdv*vv*^wpp8r-
+
+\ Texture tunnel
+ax8r+3lwd*xd*+q1x/x5r+^
+
+\ Rotozoomer
+v8rds4X3)Lx~2Xv*vv*+i!L1@2@&
+
+\ Mandelbrot zoomer (76 chars)
+vArs1ldv*vv*0!1-1!0dFX4X1)Lv*vv*-vv2**0@+x1@+4X1)Lv*vv*+4x->?Lpp0:ppRpRE.5*;
+
+\ Julia morpher (from real_het) (97 chars)
+2*2!2*3!10rdF2*s0!F9*s1!10,6!
+[2@d3@*4!d*2!3@d*3!3@2@+2@3@-0@+2!4@d+1@+3!4-<6@1-d6!*]6@4r.FF^1977+
+
+\ The 122-char demo from the video
+6{^^ddd***1%}
+5{v8rsdv*vv*^wpp8r-}
+4{v8rdsx.6+s4X3)Lx~2Xv*vv*+i!L1@2@^}
+3{ax8r+3lwd*xd*+q1x/x6r+^}
+2)6r3&3+V55A9^Md6r|5*wdAr&+
+
+\ Bitmap zoomer from the video
+v7rs6ldv*vv*7&@xr.8&$b
+00000000000000000000000000000000
+00000000011110111010010011101110
+00000000010000010010110100100100
+00000000001000010011010011100100
+00000000000100010010010100100100
+00000000000010010010010100100100
+00000000011110111010010011101110
+00000000000000000000000000000000
+
 === CHANGES ===
 
 1.1000
@@ -438,20 +506,20 @@ COMMAND LINE OPTIONS
 - More examples included in the distribution package
 - Help screen implemented
 
+1.2000 (already there)
+- Clipboard bugs fixed, window icon added
+
+=== FUTURE ===
+
 1.2000 (TODO!)
+- Include a machine status panel
+
+1.3000 (TODO!)
 - Analyzer; execution speed increase
   - for interpreter: pseudo-opcodes to separate y-loop and t-loop
   - for compiler
 
- (CSE fix to interpreted code)
-- Status panel, UI mouse support, speed change
-
-- Some more examples
-- Test cases 
-
-=== FUTURE ===
-
-In an approximate order of priority:
+Tasks in an approximate order of priority:
 - Fix problems that prevent IBNIZ from working in some systems
 - Fix other known bugs
 - On-screen machine status info

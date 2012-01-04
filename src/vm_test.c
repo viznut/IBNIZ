@@ -1,5 +1,6 @@
 #define IBNIZ_MAIN
 #include <stdio.h>
+#include <stdlib.h>
 #include "ibniz.h"
 
 void waitfortimechange()
