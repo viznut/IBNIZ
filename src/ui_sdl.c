@@ -826,12 +826,8 @@ void interactivemode(char*codetoload)
         last=now;
       }
 
-      /* todo: separate keys & semantics (make separate funcs) */
-      /* todo: osd on/off */
-
       getkeystates();
 
-      /* editor keys */
       
       if(sym==SDLK_ESCAPE) break;
       else
@@ -868,6 +864,8 @@ void interactivemode(char*codetoload)
       else
       if(ui.osd_visible)
       {
+        /* editor keys */
+      
         if(sym==SDLK_UP && (mod&KMOD_CTRL))
         {
           ed_increment(ed.cursor);
@@ -1089,7 +1087,8 @@ int main(int argc,char**argv)
   sdl.winsz=512;
   sdl.s=SDL_SetVideoMode(sdl.winsz,sdl.winsz,0,SDL_RESIZABLE);
   sdl.o=SDL_CreateYUVOverlay(256,256,SDL_YUY2_OVERLAY,sdl.s);
-
+  SDL_WM_SetCaption("IBNIZ", "IBNIZ");
+ 
   {SDL_AudioSpec as;
    as.freq=44100;
    as.format=AUDIO_S16;
