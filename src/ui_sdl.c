@@ -351,7 +351,7 @@ void checkmediaformats()
   if(vm.wcount[1]!=0 && vm.spchange[1]<=0)
   {
     DEBUG(stderr,"audio stack underrun; shut it off!\n");
-      ui.audio_off=1;
+    ui.audio_off=1;
     vm.spchange[1]=vm.wcount[1]=0;
     pauseaudio(1);
   }
@@ -802,6 +802,7 @@ void interactivemode(char*codetoload)
     if(prevtimevalue!=t || e.type!=SDL_NOEVENT)
     {
       updatescreen();
+      vm.specialcontextstep=3;
       prevtimevalue=t;
       DEBUG(stderr,"t:%x audio:%x playback:%x video:%x\n",
         t,(vm.audiotime)+(((vm.mediacontext==1)?vm.sp:vm.cosp)>>10)
@@ -1022,13 +1023,11 @@ void interactivemode(char*codetoload)
             ed.selectbase=ed.cursor;
           }
         }
-        /*
         else
         if(sym=='b' && (mod&KMOD_CTRL))
         {
           ui.benchmark_mode^=1;
         }
-        */
         else
         {
           if(e.key.keysym.unicode)

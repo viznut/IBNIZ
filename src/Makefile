@@ -25,14 +25,17 @@ winexe: clean
 #whole.c: vm_slow.c ui_sdl.c clipboard.c texts.i font.i vm.h ibniz.h
 #	cat ui_sdl.c vm_slow.c clipboard.c > whole.c
 
-$(EXE): ui_sdl.o vm_slow.o clipboard.o
-	$(CC) -Os -s ui_sdl.o vm_slow.o clipboard.o -o $(EXE) $(FLAGS) -lm
+$(EXE): ui_sdl.o vm_slow.o clipboard.o compiler.o
+	$(CC) -Os -s ui_sdl.o vm_slow.o clipboard.o compiler.o -o $(EXE) $(FLAGS) -lm
 
 ui_sdl.o: ui_sdl.c ibniz.h font.i vm.h texts.i vm.h
 	$(CC) -c -Os ui_sdl.c -o ui_sdl.o $(FLAGS)
 
 clipboard.o: clipboard.c ibniz.h
 	$(CC) -c -Os clipboard.c -o clipboard.o $(FLAGS)
+
+compiler.o: compiler.c ibniz.h vm.h
+	$(CC) -c -Os compiler.c -o compiler.o $(FLAGS)
 
 vm_slow.o: vm_slow.c ibniz.h vm.h
 	$(CC) -c -O3 vm_slow.c -o vm_slow.o
@@ -44,4 +47,7 @@ runtest: vmtest
 	./vmtest
 
 vmtest: vm_test.c vm_slow.c
-	gcc vm_test.c vm_slow.c -o vmtest -lm
+	gcc vm_test.c vm_slow.o -o vmtest -lm
+
+ibniz2c: ibniz2c.c compiler.c
+	gcc ibniz2.c compiler.c -DIBNIZ2C -o ibniz2c $(FLAGS)

@@ -24,6 +24,12 @@ void vm_init();
 int vm_run();
 void switchmediacontext();
 
+/* compiler */
+
+void compiler_parse(char*src);
+
+/* clipboard */
+
 GLOBAL char*clipboard;
 void clipboard_load();
 void clipboard_store();
