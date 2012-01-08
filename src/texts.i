@@ -10,14 +10,14 @@ char*usagetext=
 //  "  -M(edia)      Dump media data (YUV video to stdout)\n"
 
 char*versiontext=
-  "IBNIZ version 1.1800";
+  "IBNIZ version 1.1C00-NORELEASE";
 
 char*welcometext=
   "\n"
   "\n"
   "\n"
   "\n"
-  "\\ IBNIZ 1.1800\n"
+  "\\ IBNIZ 1.1C00-NORELEASE\n"
   "\\\n"
   "\\ Press f12 for help.\n";
 
