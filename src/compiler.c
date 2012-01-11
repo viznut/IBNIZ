@@ -11,6 +11,8 @@
 #  define NONATIVECODE
 #endif
 
+//#define COMPILERDEBUG
+
 void compiler_parse(char*src)
 {
   char*d=vm.parsed_code;
@@ -217,6 +219,7 @@ struct {
 
   uint8_t*co0;
   uint8_t*co;
+  int srcidx;
   // structure for label-address mapping
   // (store labels as co0-relative!)
 } gen;
@@ -260,8 +263,10 @@ int allocreg_withprefs(int preferred,int forbidden)
   int i;
   int excluded;
 
+#ifdef COMPILERDEBUG
   printf("// alloc: prefer %x forbid %x used %x\n",
     preferred,forbidden,gen.usedregs);
+#endif
 
   while((gen.usedregs|forbidden)==(1<<NUMREGS)-1)
     flushstackbottom();
@@ -328,7 +333,7 @@ int popintoreg()
     exit(-1);
   }
   r=allocreg();
-  growstack(GSV_REG,r);
+  //growstack(GSV_REG,r);
   gen_pop_reg(r);
   return r;
 }
@@ -377,7 +382,7 @@ void popsv(gsv_t*ret)
 
 /*** user-callable ***/
 
-gen_flushstack()
+flushstack()
 {
   gen_flushpartialstack(gen.gsp+1);
 }
@@ -574,10 +579,175 @@ UNOP(isneg,IBNIZ_ISNEG(i));
 UNOP(ispos,IBNIZ_ISPOS(i));
 UNOP(iszero,IBNIZ_ISZERO(i));
 
-// gen_load_reg_imm(int r,uint32_t imm)
-// gen_add_reg_reg(int r,int r)
-// gen_add_reg_imm(int r,uint32_t imm)
+/*
+// we must harmonize post-if and post-else gs structure (and post-a and post-b as well)
+// cond IF  a ELSE b ENDIF c
+//        0  1    0 1     1
+// cond IF a ENDIF
+//        0 0     0 
+// trivial: just flushstack() at these points (before if-jump, before else-jump, before endif-label)
+*/
 
+/*
+// when looping: harmonize stack state in both ends
+// a [ b ] c
+//    0 0
+*/
+
+/*
+// when jumping to subroutines:
+// A { xxx }
+*/
+
+gen_if(int skipto)
+{
+  gsv_t cond;
+  popsv(&cond);
+  flushstack();
+  if(cond.type==GSV_REG)
+  {
+    gen_beq_reg_lab(cond.val,skipto);
+  } else
+  {
+    if(cond.val==0) gen_jmp_lab(skipto);
+  }
+}
+
+gen_else(int skipto)
+{
+  flushstack();
+  gen_jmp_lab(skipto);
+  gen_label(gen.srcidx+1);
+}
+
+gen_endif()
+{
+  flushstack();
+  gen_label(gen.srcidx+1);
+}
+
+gen_load()
+{
+  int r;
+  gsv_t address;
+  popsv(&address);
+  r=allocreg();
+  growstack(GSV_REG,r);
+  if(address.type==GSV_REG)
+    gen_load_reg_reg(r,address.val);
+  else
+    gen_load_reg_imm(r,address.val);
+}
+
+gen_store()
+{
+  int r;
+  gsv_t address;
+  gsv_t value;
+  popsv(&address);
+  popsv(&value);
+  if(address.type==GSV_REG)
+  {
+    if(value.type==GSV_REG)
+      gen_store_reg_reg(address.val,value.val);
+    else
+      gen_store_reg_imm(address.val,value.val);
+  } else
+  {
+    if(value.type==GSV_REG)
+      gen_store_imm_reg(address.val,value.val);
+    else
+      gen_store_imm_imm(address.val,value.val);
+  }
+}
+
+gen_do()
+{
+  flushstack();
+  gen_rpush_lab(gen.srcidx+1);
+  gen_label(gen.srcidx+1); 
+
+  // later: use temp storage for loop address, check loop sanity
+  // analyzer will unroll small immediate loops
+}
+
+gen_times()
+{
+  gen_rpush();
+  gen_do();
+}
+
+gen_while()
+{
+  gsv_t cond;
+  popsv(&cond);
+  if(cond.type==GSV_REG)
+  {
+    flushstack();
+    gen_bne_reg_rstack(cond.val);
+    gen_rpop_noreg();
+  } else
+  {
+    if(cond.val)
+    {
+      flushstack();
+      gen_jmp_rstack();
+    } else
+    {
+      gen_rpop_noreg();
+    }
+  }
+}
+
+gen_loop()
+{
+  /*
+  in c:
+  if(--(rstack[(rsp-1)])) goto l0;
+
+  in x86:
+  dec dword [rsp-4]
+  jne .l0
+  */
+}
+
+gen_rpush()
+{
+  gsv_t v;
+  popsv(&v);
+  if(v.type==GSV_REG)
+    gen_rpush_reg(v.val);
+  else
+    gen_rpush_imm(v.val);
+}
+
+gen_defsub()
+{
+  /*
+  in c:
+  mem[X]=((&&l7)-main);
+  goto l6; // use skip to seek it
+  // (compiler: store current gs and clear gs)
+  l2:
+  */
+}
+
+gen_return()
+{
+  /*
+  flushstack();
+  gen_jmp_rpop();
+  compiler: restore stored gs
+  l6:
+  */
+}
+
+gen_rpop()
+{
+  int r=allocreg();
+  growstack(GSV_REG,r);
+  gen_rpop_reg(r);
+}
 
 gen_whereami()
 {
@@ -618,7 +788,7 @@ gen_tyxloop_init()
 gen_tyxloop_iterator()
 {
   int t,y,x;
-  gen_flushstack();
+  flushstack();
   t=allocreg();
   y=allocreg();
   x=allocreg();
@@ -633,9 +803,10 @@ gen_tyxloop_iterator()
   //gen_cmpjne_reg_inc_imm_lab(x,0x00010000,0);
 }
 
+
 gen_finish()
 {
-  gen_flushstack();
+  flushstack();
   //gen_tyxloop_iterator();
   gen_nativefinish();
 }
@@ -649,13 +820,14 @@ int compiler_compile()
   for(i=0;i<vm.codelgt;i++)
   {
     char a=vm.parsed_code[i];
-    
+    gen.srcidx=i;
+#ifdef COMPILERDEBUG    
     printf("// op %c, stack now: ",a);
     for(j=0;j<=gen.gsp;j++)
       if(gen.gs[j].type==GSV_REG) printf("%c ",'A'+gen.gs[j].val);
         else printf("%x ",gen.gs[j].val);
     printf("\n");
-    
+#endif
     checkregusage();
 
     switch(a)
@@ -729,6 +901,43 @@ int compiler_compile()
         gen_atan2();
         break;
       
+      case('?'):
+        gen_if(vm.parsed_hints[i]);
+        break;
+      case(':'):
+        gen_else(vm.parsed_hints[i]);
+        break;
+      case(';'):
+        gen_endif();
+        break;
+      
+      case('!'):
+        gen_store();
+        break;
+      case('@'):
+        gen_load();
+        break;
+
+      case('R'):
+        gen_rpop();
+        break;
+      case('P'):
+        gen_rpush();
+        break;
+
+      case('['):
+        gen_do();
+        break;
+      case(']'):
+        gen_while();
+        break;
+      case('X'):
+        gen_times();
+        break;
+      case('L'):
+        gen_loop();
+        break;
+
       case('w'):
         gen_whereami();
         break;

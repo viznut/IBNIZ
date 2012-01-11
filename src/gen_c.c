@@ -29,9 +29,11 @@ void gen_nativeinit()
 "#define IBNIZ_ISPOS(a)  ((a)>0?(a):0)\n"
 "#define IBNIZ_ISZERO(a) ((a)==0?0x10000:0)\n"
 "\n"
-"uint32_t mem[0x100000];\n"
-"uint32_t*stack=mem+0xE0000;\n"
-"uint32_t sp;\n"
+"int32_t mem[0x100000];\n"
+"int32_t*stack=mem+0xE0000;\n"
+"uint32_t*rstack=mem+0xC0000;\n"
+"int32_t sp;\n"
+"uint32_t rsp;\n"
 "\n"
 "int32_t A,B,C,D,E,F,G,H,I,J,K,L,M,N,O,P,Q,R,S,T,U,V,W,X,Y,Z;\n"
 "SDL_Surface*s;\n"
@@ -64,6 +66,7 @@ void* gen_nativefinish()
 {
   printf(
 "/********************** generated code ends ************************/\n"
+"{}"
 "}\n"
 "  {\n"
 "    uint32_t*src=stack+0x10000-(sp&0x10000),*trg=(uint32_t*)(o->pixels[0]);\n"
@@ -96,7 +99,7 @@ void gen_mov_reg_reg_reg(int t, int s)
   printf("%c=%c;\n",t+'A',s+'A');
 }
 
-void gen_mov_reg_imm(int t, uint32_t i)
+void gen_mov_reg_imm(int t, int32_t i)
 {
   printf("%c=0x%X;\n",t+'A',i);
 }
@@ -115,6 +118,36 @@ void gen_mov_ivar_reg(int v, int r)
 
 /* load & store */
 
+void gen_load_reg_reg(int t, int a)
+{
+  printf("%c=mem[ROR(%c,16)&0xFFFFF];\n",t+'A',a+'A');
+}
+
+void gen_load_reg_imm(int t, int32_t a)
+{
+  printf("%c=mem[0x%X];\n",t+'A',ROR(a,16)&0xFFFFF);
+}
+
+void gen_store_reg_reg(int a, int s)
+{
+  printf("mem[ROR(%c,16)&0xFFFFF]=%c;\n",a+'A',s+'A');
+}
+
+void gen_store_reg_imm(int a, int32_t s)
+{
+  printf("mem[ROR(%c,16)&0xFFFFF]=0x%X;\n",a+'A',s);
+}
+
+void gen_store_imm_reg(int32_t a, int s)
+{
+  printf("mem[0x%X]=%c;\n",ROR(a,16)&0xFFFFFF,s+'A');
+}
+
+void gen_store_imm_imm(int32_t a, int32_t s)
+{
+  printf("mem[0x%X]=0x%X;\n",ROR(a,16)&0xFFFFFF,s);
+}
+
 /* arithmetic */
 
 void gen_add_reg_reg_reg(int t, int s1, int s)
@@ -122,7 +155,7 @@ void gen_add_reg_reg_reg(int t, int s1, int s)
   printf("%c=%c+%c;\n",t+'A',s1+'A',s+'A');
 }
 
-void gen_add_reg_reg_imm(int t, int s1, uint32_t i)
+void gen_add_reg_reg_imm(int t, int s1, int32_t i)
 {
   printf("%c=%c+0x%X;\n",t+'A',s1+'A',i);
 }
@@ -132,7 +165,7 @@ void gen_sub_reg_reg_reg(int t, int s1, int s)
   printf("%c=%c-%c;\n",t+'A',s1+'A',s+'A');
 }
 
-void gen_sub_reg_reg_imm(int t, int s1, uint32_t i)
+void gen_sub_reg_reg_imm(int t, int s1, int32_t i)
 {
   printf("%c=%c-0x%X;\n",t+'A',s1+'A',i);
 }
@@ -142,7 +175,7 @@ void gen_mul_reg_reg_reg(int t, int s1, int s)
   printf("%c=IBNIZ_MUL(%c,%c);\n",t+'A',s1+'A',s+'A');
 }
 
-void gen_mul_reg_reg_imm(int t, int s1, uint32_t i)
+void gen_mul_reg_reg_imm(int t, int s1, int32_t i)
 {
   printf("%c=IBNIZ_MUL(%c,0x%X);\n",t+'A',s1+'A',i);
 }
@@ -152,7 +185,7 @@ void gen_div_reg_reg_reg(int t, int s1, int s)
   printf("%c=IBNIZ_DIV(%c,%c);\n",t+'A',s1+'A',s+'A');
 }
 
-void gen_div_reg_reg_imm(int t, int s1, uint32_t i)
+void gen_div_reg_reg_imm(int t, int s1, int32_t i)
 {
   printf("%c=IBNIZ_DIV(%c,0x%X);\n",t+'A',s1+'A',i);
 }
@@ -162,7 +195,7 @@ void gen_mod_reg_reg_reg(int t, int s1, int s)
   printf("%c=IBNIZ_MOD(%c,%c);\n",t+'A',s1+'A',s+'A');
 }
 
-void gen_mod_reg_reg_imm(int t, int s1, uint32_t i)
+void gen_mod_reg_reg_imm(int t, int s1, int32_t i)
 {
   printf("%c=IBNIZ_MOD(%c,0x%X);\n",t+'A',s1+'A',i);
 }
@@ -172,7 +205,7 @@ void gen_and_reg_reg_reg(int t, int s1, int s)
   printf("%c=%c&%c;\n",t+'A',s1+'A',s+'A');
 }
 
-void gen_and_reg_reg_imm(int t, int s1, uint32_t i)
+void gen_and_reg_reg_imm(int t, int s1, int32_t i)
 {
   printf("%c=%c&0x%X;\n",t+'A',s1+'A',i);
 }
@@ -182,7 +215,7 @@ void gen_or_reg_reg_reg(int t, int s1, int s)
   printf("%c=%c|%c;\n",t+'A',s1+'A',s+'A');
 }
 
-void gen_or_reg_reg_imm(int t, int s1, uint32_t i)
+void gen_or_reg_reg_imm(int t, int s1, int32_t i)
 {
   printf("%c=%c|0x%X;\n",t+'A',s1+'A',i);
 }
@@ -192,7 +225,7 @@ void gen_xor_reg_reg_reg(int t, int s1, int s)
   printf("%c=%c^%c;\n",t+'A',s1+'A',s+'A');
 }
 
-void gen_xor_reg_reg_imm(int t, int s1, uint32_t i)
+void gen_xor_reg_reg_imm(int t, int s1, int32_t i)
 {
   printf("%c=%c^0x%X;\n",t+'A',s1+'A',i);
 }
@@ -202,7 +235,7 @@ void gen_ror_reg_reg_reg(int t,int s1,int s)
   printf("%c=IBNIZ_ROR(%c,%c);\n",t+'A',s1+'A',s+'A');
 }
 
-void gen_ror_reg_reg_imm(int t,int s1,uint32_t i)
+void gen_ror_reg_reg_imm(int t,int s1,int32_t i)
 {
   printf("%c=IBNIZ_ROR(%c,0x%X);\n",t+'A',s1+'A',i);
 }
@@ -212,7 +245,7 @@ void gen_shl_reg_reg_reg(int t,int s1,int s)
   printf("%c=IBNIZ_SHL(%c,%c);\n",t+'A',s1+'A',s+'A');
 }
 
-void gen_shl_reg_reg_imm(int t,int s1,uint32_t i)
+void gen_shl_reg_reg_imm(int t,int s1,int32_t i)
 {
   printf("%c=IBNIZ_SHL(%c,0x%X);\n",t+'A',s1+'A',i);
 }
@@ -227,7 +260,7 @@ void gen_atan2_reg_reg_reg(int t,int s1,int s)
   printf("%c=IBNIZ_ATAN2(%c,%c);\n",t+'A',s1+'A',s+'A');
 }
 
-void gen_atan2_reg_reg_imm(int t,int s1,uint32_t i)
+void gen_atan2_reg_reg_imm(int t,int s1,int32_t i)
 {
   printf("%c=IBNIZ_ATAN2(%c,0x%X);\n",t+'A',s1+'A',i);
 }
@@ -264,7 +297,7 @@ void gen_push_reg(int s)
   printf("stack[(++sp)&0x1FFFF]=%c;\n",s+'A');
 }
 
-void gen_push_imm(uint32_t i)
+void gen_push_imm(int32_t i)
 {
   printf("stack[(++sp)&0x1FFFF]=0x%X;\n",i);
 }
@@ -288,9 +321,54 @@ void gen_dup_reg(int t)
 
 /* rstack */
 
+void gen_rpush_reg(int s)
+{
+  printf("rsp=(rsp+1)&0x7FFF;rstack[rsp]=%c;\n",s+'A');
+}
+
+void gen_rpush_imm(int32_t s)
+{
+  printf("rsp=(rsp+1)&0x7FFF;rstack[rsp]=0x%X;\n",s);
+}
+
+void gen_rpush_lab(int l)
+{
+  printf("rsp=(rsp+1)&0x7FFF;rstack[rsp]=(&&l%d)-(void*)main;\n",l);
+}
+
+void gen_rpop_reg(int t)
+{
+  printf("rstack[rsp]=%c;rsp=(rsp-1)&0x7FFF;\n",t+'A');
+}
+
+void gen_rpop_noreg()
+{
+  printf("rsp=(rsp-1)&0x7FFF;\n");
+}
+
 // todo
 
 /* conditionals */
+
+void gen_beq_reg_lab(int s,int l)
+{
+  printf("if(!%c) goto l%d;\n",s+'A',l);
+}
+
+void gen_bne_reg_lab(int s,int l)
+{
+  printf("if(%c) goto l%d;\n",s+'A',l);
+}
+
+void gen_beq_reg_rstack(int s)
+{
+  printf("if(!%c) goto *((void*)main+rstack[rsp]);\n",s+'A');
+}
+
+void gen_bne_reg_rstack(int s)
+{
+  printf("if(%c) goto *((void*)main+rstack[rsp]);\n",s+'A');
+}
 
 // todo
 
@@ -301,7 +379,20 @@ void gen_label(int l)
   printf("l%d:\n",l);
 }
 
-// todo
+void gen_jmp_lab(int l)
+{
+  printf("goto l%d;\n",l);
+}
+
+void gen_jmp_rstack()
+{
+  printf("goto (main+rstack[rsp]);\n");
+}
+
+void gen_jmp_rpop()
+{
+  printf("tmp=rstack[rsp];rsp=(rsp-1)&0x7FFFF;goto (main+tmp);\n");
+}
 
 /* some more complex things */
 
