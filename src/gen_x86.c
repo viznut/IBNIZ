@@ -1,13 +1,33 @@
 #include "ibniz.h"
 #include "gen.h"
 
-#define NUMREGS 5
-char*regnames[]={
-  "ebx","ecx","esi","edi","ebp"
 #ifdef AMD64
-  ,"r8","r9","r10","r11","r12","r13","r14","r15"
+#define NUMREGS 6
+#else
+#define NUMREGS 14
+#endif
+
+char*regnames[]={
+  "eax","ecx","edx","ebx", "esp","ebp","esi","edi"
+#ifdef AMD64
+  ,"r8d","r9d","r10d","r11d","r12d","r13d","r14d","r15d"
 #endif
 };
+
+char*regallocorder={
+  1,3,5,7,2,0,
+#ifdef AMD64
+  8,9,10,11,12,13,14,15
+#endif
+};
+
+
+/*
+  0 eax, 1 ecx, 2 edx,  3 ebx, 4 esp, 5 ebp, 6 esi, 7 edi
+  8 r8d, 9 r9d, ...
+*/
+
+// mask out unallocable regs
 
 void gen_nativeinit()
 {

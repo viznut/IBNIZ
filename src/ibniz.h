@@ -27,6 +27,7 @@ void switchmediacontext();
 /* compiler */
 
 void compiler_parse(char*src);
+int compiler_compile();
 
 /* clipboard */
 

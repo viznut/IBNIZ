@@ -91,8 +91,6 @@ void vm_init()
   vm.pmv_func();
 }
 
-#define SWAP(t,a,b) { t tmp=(a);(a)=(b);(b)=tmp; }
-
 void switchmediacontext()
 {
   SWAP(int32_t*,vm.stack,vm.costack);

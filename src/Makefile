@@ -49,5 +49,5 @@ runtest: vmtest
 vmtest: vm_test.c vm_slow.c
 	gcc vm_test.c vm_slow.o -o vmtest -lm
 
-ibniz2c: ibniz2c.c compiler.c
-	gcc ibniz2.c compiler.c -DIBNIZ2C -o ibniz2c $(FLAGS)
+ibniz2c: ibniz2c.c compiler.c gen_c.c
+	gcc -DIBNIZ2C -Os compiler.c ibniz2c.c -o ibniz2c -lm

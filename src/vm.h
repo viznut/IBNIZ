@@ -87,3 +87,5 @@ GLOBAL struct
 #define IBNIZ_ISNEG(a)  ((a)<0?(a):0)
 #define IBNIZ_ISPOS(a)  ((a)>0?(a):0)
 #define IBNIZ_ISZERO(a) ((a)==0?0x10000:0)
+
+#define SWAP(t,a,b) { t tmp=(a);(a)=(b);(b)=tmp; }

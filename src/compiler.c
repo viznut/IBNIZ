@@ -1,9 +1,10 @@
 #include "ibniz.h"
+#include <math.h>
 
 #if defined(X86) || defined(AMD64)
 #  include "gen.h"
 #  include "gen_x86.c"
-#elsif defined(IBNIZ2C)
+#elif defined(IBNIZ2C)
 #  include "gen.h"
 #  include "gen_c.c"
 #else
@@ -195,16 +196,29 @@ void compiler_parse(char*src)
 #define IVAR_Y 1
 #define IVAR_X 2
 
+typedef struct
+{
+  char type;
+  uint32_t val;
+} gsv_t;
+
 struct {
   int gsp;
-  struct gsv_t {
-    char type;
-    uint32_t val;
-  } gs[GENSTACKDEPTH];
+  gsv_t gs[GENSTACKDEPTH];
+  
+  int grsp;
+  gsv_t grs[GENSTACKDEPTH];
+
   uint32_t usedregs;
-//  uint32_t usedregswithtyx;
-//  int treg,yreg,xreg;
-//  int treg0,yreg0,xreg0;
+
+  // memory-register mapping as well
+  // flushrstack();
+  // flushmemory();
+
+  uint8_t*co0;
+  uint8_t*co;
+  // structure for label-address mapping
+  // (store labels as co0-relative!)
 } gen;
 
 void freereg(int reg)
@@ -218,7 +232,7 @@ void checkregusage()
   gen.usedregs=0;
   for(;i<=gen.gsp;i++)
     if(gen.gs[i].type==GSV_REG)
-      gen.usedregs|=1<<i;
+      gen.usedregs|=1<<gen.gs[i].val;
 //  gen.usedregswithtyx=gen.usedregs;
 //  if(gen.treg>=0) gen.usedregswithtyx|=1<<gen.treg;
 //  if(gen.yreg>=0) gen.usedregswithtyx|=1<<gen.yreg;
@@ -241,48 +255,48 @@ void flushstackbottom()
   }
 }
 
-int allocreg()
+int allocreg_withprefs(int preferred,int forbidden)
 {
   int i;
-  while(gen.usedregs==(1<<NUMREGS)-1)
+  int excluded;
+
+  printf("// alloc: prefer %x forbid %x used %x\n",
+    preferred,forbidden,gen.usedregs);
+
+  while((gen.usedregs|forbidden)==(1<<NUMREGS)-1)
     flushstackbottom();
-  /*
-  if(gen.usedregswithtyx==(1<<NUMREGS)-1)
-  {
-    int tyxregs=gen.usedregs^gen.usedregswithtyx;
-    if(gen.treg>0 && (tyxregs&(1<<gen.treg)))
-    {
-      i=gen.treg;
-      gen.treg=-1;
-      checkregusage();
-      return i;
-    }
-    if(gen.yreg>0 && (tyxregs&(1<<gen.yreg)))
-    {
-      i=gen.yreg;
-      gen.yreg=-1;
-      checkregusage();
-      return i;
-    }
-    if(gen.xreg>0 && (tyxregs&(1<<gen.xreg)))
-    {
-      i=gen.xreg;
-      gen.xreg=-1;
-      checkregusage();
-      return i;
-    }
-  }
-  */
+
+  excluded=gen.usedregs|forbidden|(~preferred);
   for(i=0;i<NUMREGS;i++)
   {
-    if(!(gen.usedregs&(1<<i)))
+    if(!(excluded&(1<<i)))
     {
       gen.usedregs|=1<<i;
       return i;
     }
   }
-  exit(1); // we have a fatal error if this happens
+
+  excluded=gen.usedregs|forbidden;
+  for(i=0;i<NUMREGS;i++)
+  {
+    if(!(excluded&(1<<i)))
+    {
+      gen.usedregs|=1<<i;
+      return i;
+    }
+  }
+
+  fprintf(stderr,"allocreg: no free regs after gs emptied!?");
+  exit(-1);
 }
+
+int allocreg()
+{
+  int i;
+  int cands;
+  return allocreg_withprefs(0,0);
+}
+
 
 void gen_flushpartialstack(int howmany)
 {
@@ -308,7 +322,11 @@ void growstackri(int r,int32_t i)
 int popintoreg()
 {
   int r;
-  if(gen.gsp>=0) exit(1); // should precheck this
+  if(gen.gsp>=0)
+  {
+    fprintf(stderr,"popintoreg: gsp>=0");
+    exit(-1);
+  }
   r=allocreg();
   growstack(GSV_REG,r);
   gen_pop_reg(r);
@@ -318,6 +336,7 @@ int popintoreg()
 void stateinit()
 {
   gen.gsp=-1;
+  gen.grsp=-1;
   //gen.xreg=gen.yreg=gen.treg=-1;
   gen.usedregs=0; //gen.usedregswithtyx=0;
 }
@@ -325,7 +344,7 @@ void stateinit()
 int popstackval(int32_t*i)
 {
   int r;
-  if(gen.gsp<0-depth)
+  if(gen.gsp<0)
     r=popintoreg();
   else
   {
@@ -338,6 +357,22 @@ int popstackval(int32_t*i)
     gen.gsp--;
   }
   return r;
+}
+
+void popsv(gsv_t*ret)
+{
+  int r;
+  if(gen.gsp<0)
+  {
+    ret->type=GSV_REG;
+    ret->val=popintoreg();
+  }
+  else
+  {
+    ret->type=gen.gs[gen.gsp].type;
+    ret->val=gen.gs[gen.gsp].val;
+    gen.gsp--;
+  }
 }
 
 /*** user-callable ***/
@@ -372,24 +407,22 @@ gen_dup()
 
 gen_swap()
 {
-  int r0,r1;
-  int32_t i0,i1;
-  r0=popintoreg(&i0);
-  r1=popintoreg(&i1);
-  growstackri(r0,i0);
-  growstackri(r1,i1);
+  gsv_t v1,v0;
+  popsv(&v0);
+  popsv(&v1);
+  growstack(v0.type,v0.val);
+  growstack(v1.type,v1.val);
 }
 
 gen_trirot()
 {
-  int r0,r1,r2;
-  int32_t i0,i1,i2;
-  r0=popintoreg(&i0);
-  r1=popintoreg(&i1);
-  r2=popintoreg(&i2);
-  growstackri(r1,i1);
-  growstackri(r0,i0);
-  growstackri(r2,i2);
+  gsv_t v2,v1,v0;
+  popsv(&v0);
+  popsv(&v1);
+  popsv(&v2);
+  growstack(v1.type,v1.val);
+  growstack(v0.type,v0.val);
+  growstack(v2.type,v2.val);
 }
 
 gen_pick()
@@ -409,52 +442,137 @@ gen_loadimm(int val)
 
 /* arithmetic */
 
+// use gen_##name##_reg_reg_reg(t,s0,s1);
 
-#define BINOP(name,immimm) \
-gen_##name ()
+void binop_getsv(gsv_t*t,gsv_t*s1,gsv_t*s0,int is_commutative)
+{
+  popsv(s0);
+  popsv(s1);
+  checkregusage();
+  if(s0->type!=GSV_REG && s1->type!=GSV_REG)
+  {
+    t->type=GSV_ABS;
+  }
+  else
+  {
+    t->type=GSV_REG;
+    if(s1->type==GSV_REG)
+    {
+      t->val=allocreg_withprefs(1<<(s1->val),
+        (s0->type==GSV_REG)?1<<(s0->val):0);
+    }
+    else
+    {
+      if(is_commutative)
+      {
+        SWAP(int,s0->type,s1->type);
+        SWAP(uint32_t,s0->val,s1->val);
+        t->val=allocreg_withprefs(1<<(s1->val),0);
+      } else
+      {
+        t->val=allocreg_withprefs(0,1<<(s0->val));
+      }
+    }
+  }
+}
+
+void unop_getsv(gsv_t*t,gsv_t*s)
+{
+  popsv(s);
+  checkregusage();
+  if(s->type!=GSV_REG)
+  {
+    t->type=GSV_ABS;
+  }
+  else
+  {
+    t->type=GSV_REG;
+    t->val=allocreg_withprefs(1<<(s->val),0);
+  }
+}
+
+#define BINOP_C(name,immimm) \
+gen_##name () \
 { \
-  int r0,r1; \
-  int32_t i0,i1; \
-  r0=popstackval(&i0); \
-  r1=popstackval(&i1); \
-  if(r0<0 && r1<0) \
+  gsv_t t,s1,s0; \
+  binop_getsv(&t,&s1,&s0,1); \
+  if(t.type==GSV_ABS) \
   { \
+    uint32_t i1=s1.val,i0=s0.val; \
     growstack(GSV_ABS,immimm); \
   } \
   else \
-  if(r0>=0 && r1>=0) \
   { \
-    growstack(GSV_REG,r0); \
-    gen_##name##_reg_reg (r0,r1); \
+    growstack(GSV_REG,t.val); \
+    if(s0.type==GSV_REG) \
+      gen_##name##_reg_reg_reg(t.val,s1.val,s0.val); \
+    else \
+      gen_##name##_reg_reg_imm(t.val,s1.val,s0.val); \
+  } \
+}
+
+#define BINOP_NC(name,immimm) \
+gen_##name () \
+{ \
+  gsv_t t,s1,s0; \
+  binop_getsv(&t,&s1,&s0,0); \
+  if(t.type==GSV_ABS) \
+  { \
+    uint32_t i1=s1.val,i0=s0.val; \
+    growstack(GSV_ABS,immimm); \
   } \
   else \
   { \
-    growstack(GSV_REG,r0>=0?r0:r1); \
-    gen_##name##_reg_imm (r0>=0?r0:r1,r0>=0?i1:i0); \
+    growstack(GSV_REG,t.val); \
+    if(s1.type==GSV_REG) \
+    { \
+      if(s0.type==GSV_REG) \
+        gen_##name##_reg_reg_reg(t.val,s1.val,s0.val); \
+      else \
+        gen_##name##_reg_reg_imm(t.val,s1.val,s0.val); \
+    } \
+    else \
+    { \
+      gen_mov_reg_imm(t.val,s1.val); \
+      gen_##name##_reg_reg_reg(t.val,t.val,s0.val); \
+    } \
   } \
 }
 
-BINOP(add,i1+i0)
-BINOP(sub,i1-i0)
-BINOP(and,i1&i0)
-BINOP(mul,IBNIZ_MUL(i1,i0))
-BINOP(div,IBNIZ_DIV(i1,i0))
-BINOP(and,i1&i0)
-BINOP(xor,i1^i0)
-BINOP(or,i1|i0)
+BINOP_C(add,i1+i0)
+BINOP_NC(sub,i1-i0)
+BINOP_C(mul,IBNIZ_MUL(i1,i0))
+BINOP_NC(div,IBNIZ_DIV(i1,i0))
+BINOP_NC(mod,IBNIZ_MOD(i1,i0))
+BINOP_C(and,i1&i0)
+BINOP_C(xor,i1^i0)
+BINOP_C(or,i1|i0)
+BINOP_NC(ror,IBNIZ_ROR(i1,i0))
+BINOP_NC(shl,IBNIZ_SHL(i1,i0))
+BINOP_NC(atan2,IBNIZ_ATAN2(i1,i0))
 
-gen_neg()
-{
-  int32_t i;
-  r=popstackval(&i);
-  if(r<0)
-    growstack(GSV_ABS,~i);
-  else
-  {
-    growstack(GSV_REG,r);
-    gen_neg_reg(r);
-  }
+#define UNOP(name,imm) \
+gen_##name () \
+{ \
+  gsv_t t,s; \
+  unop_getsv(&t,&s); \
+  if(t.type==GSV_ABS) { \
+    uint32_t i=s.val; \
+    growstack(GSV_ABS,imm); \
+  } \
+  else \
+  { \
+    growstack(GSV_REG,t.val); \
+    gen_##name##_reg_reg(t.val,s.val); \
+  } \
 }
+
+UNOP(neg,~i)
+UNOP(sin,IBNIZ_SIN(i))
+UNOP(sqrt,IBNIZ_SQRT(i))
+UNOP(isneg,IBNIZ_ISNEG(i));
+UNOP(ispos,IBNIZ_ISPOS(i));
+UNOP(iszero,IBNIZ_ISZERO(i));
 
 // gen_load_reg_imm(int r,uint32_t imm)
 // gen_add_reg_reg(int r,int r)
@@ -491,8 +609,8 @@ gen_tyxloop_init()
   gen_mov_reg_ivar(gen.xreg,IVAR_X);
   */
   gen_nativeinit();
-  gen_whereami();
   gen_label(0);
+  gen_whereami();
 }
 
 // real whereami can use any regs
@@ -510,15 +628,15 @@ gen_tyxloop_iterator()
   gen_mov_reg_ivar(t,IVAR_T);
   gen_mov_reg_ivar(y,IVAR_Y);
   gen_mov_reg_ivar(x,IVAR_X);
-  gen_add_reg_imm(x,2);
+  gen_add_reg_reg_imm(x,x,2);
   gen_mov_ivar_reg(IVAR_X,x);
-  gen_cmpjne_reg_inc_imm_lab(x,0x00010000,0);
+  //gen_cmpjne_reg_inc_imm_lab(x,0x00010000,0);
 }
 
 gen_finish()
 {
   gen_flushstack();
-  gen_tyxloop_iterator();
+  //gen_tyxloop_iterator();
   gen_nativefinish();
 }
 #endif
@@ -526,11 +644,20 @@ gen_finish()
 int compiler_compile()
 {
 #ifndef NONATIVECODE
-  int i;
+  int i,j;
   gen_tyxloop_init();
   for(i=0;i<vm.codelgt;i++)
   {
     char a=vm.parsed_code[i];
+    
+    printf("// op %c, stack now: ",a);
+    for(j=0;j<=gen.gsp;j++)
+      if(gen.gs[j].type==GSV_REG) printf("%c ",'A'+gen.gs[j].val);
+        else printf("%x ",gen.gs[j].val);
+    printf("\n");
+    
+    checkregusage();
+
     switch(a)
     {
       case(OP_LOADIMM):
@@ -576,6 +703,34 @@ int compiler_compile()
         break;
       case('~'):
         gen_neg();
+        break;
+      case('r'):
+        gen_ror();
+        break;
+      case('l'):
+        gen_shl();
+        break;
+      case('<'):
+        gen_isneg();
+        break;
+      case('>'):
+        gen_ispos();
+        break;
+      case('='):
+        gen_iszero();
+        break;
+      case('q'):
+        gen_sqrt();
+        break;
+      case('s'):
+        gen_sin();
+        break;
+      case('a'):
+        gen_atan2();
+        break;
+      
+      case('w'):
+        gen_whereami();
         break;
     }
   }
