@@ -1080,7 +1080,11 @@ void interactivemode(char*codetoload)
   }
 }
 
+#ifdef __native_client__
+int sdl_main(int argc,char**argv)
+#else
 int main(int argc,char**argv)
+#endif
 {
   signed char autorun=-1;
   char*codetoload = welcometext;
@@ -1148,7 +1152,9 @@ int main(int argc,char**argv)
     argv++;
   }
 
+#ifndef __native_client__
   SDL_Init(SDL_INIT_VIDEO|SDL_INIT_AUDIO);
+#endif
 
   sdl.winsz=512;
   sdl.s=SDL_SetVideoMode(sdl.winsz,sdl.winsz,0,SDL_RESIZABLE);
