@@ -774,7 +774,7 @@ char*ed_getprogbuf()
 void interactivemode(char*codetoload)
 {
   int codechanged=0;
-  uint32_t prevtimevalue=gettimevalue();
+  uint32_t prevtimevalue=gettimevalue() - 1;
   SDL_Event e;
 
   SDL_EnableKeyRepeat(SDL_DEFAULT_REPEAT_DELAY,10);
