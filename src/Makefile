@@ -51,3 +51,7 @@ vmtest: vm_test.c vm_slow.c
 
 ibniz2c: ibniz2c.c compiler.c gen_c.c
 	gcc -DIBNIZ2C -Os compiler.c ibniz2c.c -o ibniz2c -lm
+
+install: ${EXE}
+	install -d ${DESTDIR}/usr/bin
+	install $<  ${DESTDIR}/usr/bin/
