@@ -1,13 +1,17 @@
 #!/usr/bin/make -f
-#export DH_VERBOSE=1
+export DH_VERBOSE=1
 
-%: src
-	cd $< && dh $@ --parallel
+%:
+	dh $@ --parallel
 
-override_dh_auto_build: src
-	cd $< && rm -f font.i
-	cd $< && dh_auto_build
+override_dh_configure: src
+	mv $</* ./
+	dh_auto_configure
 
-override_dh_auto_test: src
-	make runtest -C $<
+override_dh_auto_build:
+	rm -f font.i
+	dh_auto_build
+
+override_dh_auto_test:
+	make runtest
 
