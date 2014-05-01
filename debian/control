@@ -1,0 +1,19 @@
+Source: ibniz
+Section: graphics
+Priority: optional
+Maintainer: maxigas <maxigas@anargeek.net>
+Build-Depends: debhelper (>= 9), libsdl1.2-dev, python-docutils, perl
+Standards-Version: 3.9.4
+Homepage: http://pelulamu.net/ibniz/
+#Vcs-Git: git://git.debian.org/collab-maint/ibniz.git
+#Vcs-Browser: http://git.debian.org/?p=collab-maint/ibniz.git;a=summary
+
+Package: ibniz
+Architecture: alpha any-amd64 arm armel armhf arm64 any-i386 ia64 mipsel sh4 x32
+Depends: ${shlibs:Depends}, ${misc:Depends}
+Description: Virtual machine for compact low-level audiovisual programs
+ IBNIZ is a virtual machine designed for extremely compact low-level
+ audiovisual programs. The leading design goal is usefulness as a
+ platform for demoscene productions, glitch art and similar projects.
+ Mainsteam software engineering aspects are considered totally
+ irrelevant.
