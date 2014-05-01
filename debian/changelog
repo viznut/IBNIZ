@@ -1,3 +1,21 @@
+ibniz (0.0.20140501-0ubuntu0~rzr0) saucy; urgency=medium
+
+  * wip: http://rzr.online.fr/q/snapshot#ibniz
+
+ -- Philippe Coval <rzr@gna.org>  Thu, 01 May 2014 22:02:32 +0200
+
+ibniz (0.0.20140501-0ubuntu0~rzr0) saucy; urgency=medium
+
+  * WIP: http://rzr.online.fr/q/snapshot#ibniz
+
+ -- Philippe Coval <rzr@gna.org>  Thu, 01 May 2014 22:02:31 +0200
+
+ibniz (0.0.0-0) UNRELEASED; urgency=medium
+
+  * TODO: remove on release
+
+ -- Philippe Coval <rzr@gna.org>  Thu, 01 May 2014 22:02:31 +0200
+
 ibniz (1.18-1) unstable; urgency=low
 
   * Initial release (Closes: #724249)

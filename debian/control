@@ -17,3 +17,14 @@ Description: Virtual machine for compact low-level audiovisual programs
  platform for demoscene productions, glitch art and similar projects.
  Mainsteam software engineering aspects are considered totally
  irrelevant.
+
+Package: ibniz-snapshot
+Architecture: all
+Section: sound
+Depends: ibniz (= ${source:Version}), ${misc:Depends}
+Suggests: rzr
+Priority: extra
+Description: unreleased snapshot version
+ TODO: Remove on issue and upgrade ibniz
+ http://rzr.online.fr/q/snapshot#ibniz Feedback welcome
+
