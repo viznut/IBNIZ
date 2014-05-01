@@ -1,0 +1,6 @@
+*~
+debian/*.log
+debian/*.subvars
+debian/*/*/*
+debian/files
+packaging/*/*
