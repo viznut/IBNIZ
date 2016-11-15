@@ -8,6 +8,8 @@ int main(int argc,char**argv)
 {
   int rc;
 
+  printf("Bonjour ibniz2C \n");
+
   if(argc<=1)
   {
     fprintf(stderr,"usage: %s 'ibnizcode'\n",argv[0]);

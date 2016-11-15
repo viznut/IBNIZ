@@ -1082,6 +1082,7 @@ void interactivemode(char*codetoload)
 
 int main(int argc,char**argv)
 {
+	printf("Bonjour ui_sdl:main \n");//analyse
   signed char autorun=-1;
   char*codetoload = welcometext;
   ui.opt_dumpkeys=0;

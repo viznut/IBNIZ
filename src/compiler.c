@@ -11,7 +11,7 @@
 #  define NONATIVECODE
 #endif
 
-//#define COMPILERDEBUG
+#define COMPILERDEBUG
 
 void compiler_parse(char*src)
 {
