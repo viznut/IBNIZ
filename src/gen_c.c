@@ -12,7 +12,7 @@ char*ivarnames[] = { "t","y","x","v3","v4","v5","v6","v7" };
 void gen_nativeinit()
 {
   printf(
-"#include <SDL/SDL.h>\n"
+"#include <SDL2/SDL.h>\n"
 "#include <math.h>\n"
 "\n"
 "#define ROR(a,s)   ((((uint32_t)(a))>>(s))|(((uint32_t)(a))<<(32-(s))))\n"

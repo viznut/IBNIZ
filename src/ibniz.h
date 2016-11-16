@@ -39,7 +39,7 @@ void clipboard_store();
 #define  CLIPBOARD_WIN32
 #elif defined(X11)
 #define  CLIPBOARD_X11
-#include <SDL/SDL.h>
+#include <SDL2/SDL.h>
 void clipboard_handlesysreq(SDL_Event*e);
 #else
 #define  CLIPBOARD_NONE

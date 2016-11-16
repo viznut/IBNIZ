@@ -2,7 +2,7 @@
 
 #if defined(WIN32)
 #include <windows.h>
-
+/*
 void clipboard_load()
 {
   HGLOBAL data;
@@ -47,8 +47,8 @@ void clipboard_store()
 #elif defined(X11)
 #include <X11/Xlib.h>
 #include <X11/Xatom.h>
-#include <SDL/SDL.h>
-#include <SDL/SDL_syswm.h>
+#include <SDL2/SDL.h>
+#include <SDL2/SDL_syswm.h>
 
 struct
 {
@@ -195,5 +195,6 @@ void clipboard_load()
 void clipboard_store()
 {
 }
-
+*/
 #endif
+
