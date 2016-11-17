@@ -6,8 +6,7 @@
 #define IBNIZ_MAIN
 #include "ibniz.h"
 #include "texts.i"
-//#include <string.h>
-//#include <cstring>
+
 
 
   extern Uint32 *pixels = 0;
@@ -46,8 +45,7 @@ struct
 
 struct
 {
-  //int width;
-  //int height;
+
   int framecount;
   int subframe;
   char audiopaused;
@@ -214,8 +212,6 @@ void showyuv()
 	SDL_RenderClear(sdl.r);
 	SDL_RenderCopy(sdl.r, sdl.o, NULL, NULL);
 	SDL_RenderPresent(sdl.r);
-  //SDL_Rect area={sdl.xmargin,sdl.ymargin,sdl.winsz,sdl.winsz};
-  //SDL_DisplayYUVOverlay(sdl.o,&area);
 }
 
 void updatescreen()
@@ -273,7 +269,6 @@ int getticks()
 uint32_t getcorrectedticks()
 {
   uint32_t t;
-  //printf("getticks() :%d ui.timercorr :%d pusedsinc:%d \n",getticks(),ui.timercorr,ui.paused_since);//analyse
   if(ui.runstat==1) t=getticks()-ui.timercorr;
                else t=ui.paused_since-ui.timercorr;
   return t;
@@ -804,8 +799,7 @@ void interactivemode(char*codetoload)
   uint32_t prevtimevalue=gettimevalue();
   SDL_Event e;
 
-  //SDL_EnableKeyRepeat(SDL_DEFAULT_REPEAT_DELAY,10);//TODO
-  //SDL_EnableUNICODE(1);
+
   ed.textbuffer=malloc(EDITBUFSZ*sizeof(char));
   strncpy(ed.textbuffer,codetoload,EDITBUFSZ-1);
   ed_unselect();
@@ -821,7 +815,7 @@ void interactivemode(char*codetoload)
 
 #ifdef X11
   SDL_EventState(SDL_SYSWMEVENT,SDL_ENABLE);
-//printf("X11");
+
 #endif
   SDL_StartTextInput();
 
@@ -831,14 +825,14 @@ void interactivemode(char*codetoload)
     uint32_t t = gettimevalue();
     int SDL_NOEVENT=1;
     updatescreen();
-    while ( SDL_PollEvent(&e) ) // Nous traitons les événements de la queue
-           {///lala
+    while ( SDL_PollEvent(&e) ) // process event
+           {
     			SDL_NOEVENT=0;
 
 
 				 if(e.type==SDL_TEXTINPUT)
 				 				{
-				 				printf("TEXT edit%s\n",e.text.text);
+				 				//printf("TEXT edit%s\n",e.text.text);
 				 				ed_char(e.text.text[0]);
 				 				codechanged=1;
 				 				}
@@ -855,10 +849,7 @@ void interactivemode(char*codetoload)
 				  int sym=e.key.keysym.sym;
 				  int mod=e.key.keysym.mod;
 
-				  printf("scan %s\n",SDL_GetScancodeName(e.key.keysym.sym));
-				  printf("Physical %s key acting as %s key\n",
-				        SDL_GetScancodeName(e.key.keysym.scancode),
-				        SDL_GetKeyName(e.key.keysym.sym));
+
 
 
 				  if(ui.opt_dumpkeys)
@@ -871,7 +862,7 @@ void interactivemode(char*codetoload)
 					  e.key.keysym.scancode,mod);
 					last=now;
 				  }
-				  //printf("getkeystates \n");//analyse
+
 				  getkeystates();
 
 
@@ -884,7 +875,7 @@ void interactivemode(char*codetoload)
 				  else
 				  if(sym==SDLK_F1)
 				  {
-					  printf("F1\n");//analyse
+
 					pauseaudio(ui.runstat);
 					ui.runstat^=1;
 					if(ui.runstat==0)
@@ -912,7 +903,7 @@ void interactivemode(char*codetoload)
 				  else
 				  if(ui.osd_visible)
 				  {
-					  //printf("touche %c\n",SDL_GetKeyName(sym));
+
 					/* editor keys */
 
 					if(sym==SDLK_UP && (mod&KMOD_CTRL))
@@ -1018,26 +1009,8 @@ void interactivemode(char*codetoload)
 					}
 					else
 					{
-					  //if(e.key.keysym.scancode)
-					if(SDL_GetKeyName(e.key.keysym.sym))//TODO unicode
-					  {//tous les autres caracteres
 
 
-
-						printf("ecriture %d %c\n",e.key.keysym.sym);
-						//int test=e.text.text;
-						//printf("string[] %s\n",e.text.text);
-						//printf("char[] %c\n",e.text.text);
-						//getkeystates();
-
-						//e.text.text
-						//ed_char(e.key.keysym.scancode);
-
-						/*
-						ed_char(e.key.keysym.sym);
-						codechanged=1;
-						*/
-					  }
 					}
 				  }
 				}
