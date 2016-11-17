@@ -23,8 +23,8 @@ struct
 
 struct
 {
-  char runstat;
-  uint32_t timercorr;
+  char runstat;//switch ON/OFF F1
+  uint32_t timercorr;//time corrrection
   uint32_t paused_since;
   uint32_t auplayptr;
   uint32_t auplaytime;
@@ -39,7 +39,7 @@ struct
 
   char opt_dumpkeys;
   char opt_nonrealtime;
-  char opt_playback;
+  char opt_playback;//
   char opt_dumpmedia;
 } ui;
 
@@ -206,7 +206,9 @@ void drawStatusPanel()
 
 void showyuv()
 {
-	SDL_UpdateTexture(sdl.o, NULL, pixels, 256 * sizeof (Uint32));
+
+	//printf("showYUV \n");//analyse
+	SDL_UpdateTexture(sdl.o, NULL, pixels, (256/2) * sizeof (Uint32));
 
 	SDL_RenderClear(sdl.r);
 	SDL_RenderCopy(sdl.r, sdl.o, NULL, NULL);
@@ -217,6 +219,7 @@ void showyuv()
 
 void updatescreen()
 {
+	//printf("updatescreen \n");//analyse
   int x,y;
   uint32_t*s=vm.mem+0xE0000+(vm.visiblepage<<16);
 
@@ -269,6 +272,7 @@ int getticks()
 uint32_t getcorrectedticks()
 {
   uint32_t t;
+  //printf("getticks() :%d ui.timercorr :%d pusedsinc:%d \n",getticks(),ui.timercorr,ui.paused_since);//analyse
   if(ui.runstat==1) t=getticks()-ui.timercorr;
                else t=ui.paused_since-ui.timercorr;
   return t;
@@ -298,11 +302,17 @@ void waitfortimechange()
 
 void getkeystates()
 {
+
   int m=SDL_GetModState();
   uint8_t*k=SDL_GetKeyboardState(NULL);
-  m=((m&KMOD_CTRL)?64:0)|((m&(KMOD_ALT|(KMOD_LGUI|KMOD_RGUI)))?32:0)|((m&KMOD_SHIFT)?16:0)
-    |(k[SDLK_UP]?8:0)|(k[SDLK_DOWN]?4:0)|(k[SDLK_LEFT]?2:0)|(k[SDLK_RIGHT]?1:0);
+
+
+
+  m=((m&KMOD_CTRL)?64:0)|((m&(KMOD_ALT|KMOD_GUI))?32:0)|((m&KMOD_SHIFT)?16:0)
+    |(k[SDL_SCANCODE_UP]?8:0)|(k[SDL_SCANCODE_DOWN]?4:0)|(k[SDL_SCANCODE_LEFT]?2:0)|(k[SDL_SCANCODE_RIGHT]?1:0);
+
   vm.userinput=(vm.userinput&0x80FFFFFF)|(m<<24);
+
 }
 
 /*** audio-related ***/
@@ -787,7 +797,9 @@ char*ed_getprogbuf()
 
 void interactivemode(char*codetoload)
 {
-  int codechanged=0;
+	printf("interactivemode debut \n");//analyse
+	int codechanged=0;
+	int exit_request=0;
   uint32_t prevtimevalue=gettimevalue();
   SDL_Event e;
 
@@ -808,303 +820,355 @@ void interactivemode(char*codetoload)
 
 #ifdef X11
   SDL_EventState(SDL_SYSWMEVENT,SDL_ENABLE);
+//printf("X11");
 #endif
   
   for(;;)
   {
+
     uint32_t t = gettimevalue();
-    if(prevtimevalue!=t )
-    	//if(prevtimevalue!=t || e.type!=SDL_NOEVENT)
-    {
-      updatescreen();
-      vm.specialcontextstep=3;
-      prevtimevalue=t;
-      DEBUG(stderr,"t:%x audio:%x playback:%x video:%x\n",
-        t,(vm.audiotime)+(((vm.mediacontext==1)?vm.sp:vm.cosp)>>10)
-        ,(ui.auplaytime>>16)+(ui.auplayptr>>26),vm.videotime);
-    }
-    {
-      static int lastpage=0;
-      if(lastpage!=vm.visiblepage)
-      {
-        lastpage=vm.visiblepage;
-        ui.framecounter++;
-        if(ui.opt_nonrealtime) nrtframestep();
-      }
-    }
-    if(t>=120+ui.bmtime)
-    {
-      float secs=(t-ui.bmtime)/60.0;
-      ui.mops=ui.cyclecounter/(secs*1000000);
-      ui.fps=ui.framecounter/secs;      
-      ui.cyclecounter=ui.framecounter=0;
-      ui.bmtime=t;
-    }
-    if(ui.runstat==0)
-    {
-      if(!ui.opt_playback)
-        SDL_WaitEvent(&e);
-      else
-      {
-    	    while (SDL_PollEvent(&e)) {
-//poll event
-    	    }
-    	    pollplaybackevent(&e);
-    	    if(ui.opt_nonrealtime) nrtframestep();
-    	/*e.type=SDL_NOEVENT;
-        SDL_PollEvent(&e);
-        if(e.type==SDL_NOEVENT)
-          pollplaybackevent(&e);
-        if(e.type==SDL_NOEVENT && ui.opt_nonrealtime)
-          nrtframestep();*/
-      }
-    }
-    else
-    {
-    	while (SDL_PollEvent(&e)) {
-    	//poll event
-    	    	    }
-      if(ui.opt_playback )  pollplaybackevent(&e);
 
-        if(codechanged) 
-        {
-          vm_compile(ed_getprogbuf());
-          if(ui.audio_off)
-          {
-            ui.audio_off=0;
-            pauseaudio(0);
-          }
-          codechanged=0;
-        }
-        {
-          int c = vm_run();
-          ui.cyclecounter+=c;
-        }
-        if(ui.opt_nonrealtime)
-        {
-          dumper.subframe++;
-          if(!(dumper.subframe&4095)) nrtframestep();
-        }
-        checkmediaformats();
-        scheduler_check();
-        continue;
-
-    }
-    if(e.type==SDL_QUIT) break;
-    if(e.type==SDL_KEYDOWN)
-    {
-      int sym=e.key.keysym.sym;
-      int mod=e.key.keysym.mod;
-
-      if(ui.opt_dumpkeys)
-      {
-        static int last=0;
-        int now=getticks();
-        if(!sym && e.key.keysym.scancode)
-             sym=e.key.keysym.scancode;
-        printf("%d %d %d %d\n",now-last,sym,
-          e.key.keysym.scancode,mod);
-        last=now;
-      }
-
-      getkeystates();
-
-      
-      if(sym==SDLK_ESCAPE) break;
-      else
-      if(sym==SDLK_TAB)
-      {
-        ui.osd_visible^=1;
-      }
-      else
-      if(sym==SDLK_F1)
-      {
-        pauseaudio(ui.runstat);
-        ui.runstat^=1;
-        if(ui.runstat==0)
-        {
-          ui.paused_since=getticks();
-        } else
-        {
-          ui.timercorr+=getticks()-ui.paused_since;
-          ui.mops=ui.fps=ui.bmtime=0;
-        }
-      }
-      else
-      if(sym==SDLK_F2)
-      {
-        ui.timercorr=ui.paused_since=getticks();
-        if(codechanged)
-        {
-          vm_compile(ed_getprogbuf());
-          codechanged=0;
-        }
-        vm_init();
-        ui.auplayptr=ui.auplaytime=0;
-        pauseaudio(ui.runstat^1);
-      }
-      else
-      if(ui.osd_visible)
-      {
-        /* editor keys */
-      
-        if(sym==SDLK_UP && (mod&KMOD_CTRL))
-        {
-          ed_increment(ed.cursor);
-          codechanged=1;
-        }
-        else
-        if(sym==SDLK_DOWN && (mod&KMOD_CTRL))
-        {
-          ed_decrement(ed.cursor);
-          codechanged=1;
-        }
-        else
-        if(sym==SDLK_LEFT && (mod&KMOD_CTRL))
-        {
-          ed_prev();
-        }
-        else
-        if(sym==SDLK_RIGHT && (mod&KMOD_CTRL))
-        {
-          ed_next();
-        }
-        else
-        if(sym==SDLK_LEFT)
-        {
-          ed_left(mod&KMOD_SHIFT);
-        }
-        else
-        if(sym==SDLK_RIGHT)
-        {
-          ed_right(mod&KMOD_SHIFT);
-        }
-        else
-        if(sym==SDLK_UP)
-        {
-          ed_up(mod&KMOD_SHIFT);
-        }
-        else
-        if(sym==SDLK_DOWN)
-        {
-          ed_down(mod&KMOD_SHIFT);
-        }
-        else
-        if(sym==SDLK_BACKSPACE)
-        {
-          ed_backspace(-1);
-          codechanged=1;
-        }
-        else
-        if(sym==SDLK_DELETE)
-        {
-          ed_backspace(0);
-          codechanged=1;
-        }
-        else
-        if(sym==SDLK_F12)
-        {
-          ed_switchbuffers();
-        }
-        else
-        if(sym=='s' && (mod&KMOD_CTRL))
-        {
-          ed_save();
-        }
-        else
-        if(sym=='c' && (mod&KMOD_CTRL))
-        {
-          ed_copy();
-        }
-        else
-        if(sym=='k' && (mod&KMOD_CTRL))
-        {
-          ed_copy();
-        }
-        else
-        if(sym=='v' && (mod&KMOD_CTRL))
-        {
-          ed_paste();
-        }
-        else
-        if(sym=='x' && (mod&KMOD_CTRL))
-        {
-          ed_cut();
-        }
-        else
-        if(sym=='a' && (mod&KMOD_CTRL))
-        {
-          if(ed.selectbase) ed_unselect();
-            else
-          {
-            ed.selectstart=ed.textbuffer;
-            ed.selectend=ed.textbuffer+strlen(ed.textbuffer);
-            ed.selectbase=ed.cursor;
-          }
-        }
-        else
-        if(sym=='b' && (mod&KMOD_CTRL))
-        {
-          ui.benchmark_mode^=1;
-        }
-        else
-        {
-          if(e.key.keysym.scancode)
-          {
-            ed_char(e.key.keysym.scancode);
-            codechanged=1;
-          }
-        }
-      }
-    }
-    else if(e.type==SDL_KEYUP)
-    {
-      getkeystates();
-    }
-    else if(e.type==SDL_MOUSEMOTION)
-    {
-      int y=(e.motion.y*256)/sdl.winsz;
-      int x=(e.motion.x*256)/sdl.winsz;
-      if(y>=0 && x>=0 && y<=255 && x<=255)
-        vm.userinput=(vm.userinput&0xFFFF0000)|(y<<8)|x;
-    }
-    else if(e.type==SDL_MOUSEBUTTONDOWN)
-    {
-      vm.userinput|=0x80000000;
-    }
-    else if(e.type==SDL_MOUSEBUTTONUP)
-    {
-      vm.userinput&=0x7FFFFFFF;
-    }
-    /*else if(e.type==SDL_VIDEORESIZE)
-    {
-      sdl.winsz=e.resize.w<e.resize.h?e.resize.w:e.resize.h;
-      sdl.xmargin=(e.resize.w-sdl.winsz)/2;
-      sdl.ymargin=(e.resize.h-sdl.winsz)/2;
-
-      SDL_FreeSurface(sdl.s);
-      sdl.s=SDL_SetVideoMode(e.resize.w,e.resize.h,0,SDL_RESIZABLE);
-      SDL_FreeYUVOverlay(sdl.o);
-      sdl.o=SDL_CreateYUVOverlay(256,256,SDL_YUY2_OVERLAY,sdl.s);
-      SDL_WM_SetCaption("IBNIZ","IBNIZ");
-
-      showyuv();
-    }*/
-    else if(e.type==SDL_WINDOWEVENT)
-    {
-    	switch (e.window.event) {
-        case SDL_WINDOWEVENT_RESIZED:
-            /*SDL_Log("Window %d resized to %dx%d",
-                    event->window.windowID, event->window.data1,
-                    event->window.data2);
-            */
-          	//sdl.winsz=e.
-        	printf("redimensionnement de la fenetre");
-            break;
+    updatescreen();
+    while ( SDL_PollEvent(&e) ) // Nous traitons les événements de la queue
+           {///lala
 
 
-    	}
-    }
+
+
+				//printf("prev :%d / now %d\n",prevtimevalue,t);
+				if(prevtimevalue!=t )
+
+					//if(prevtimevalue!=t || e.type!=SDL_NOEVENT)
+				{
+				  //updatescreen();
+				  vm.specialcontextstep=3;
+				  prevtimevalue=t;
+				  DEBUG(stderr,"t:%x audio:%x playback:%x video:%x\n",
+					t,(vm.audiotime)+(((vm.mediacontext==1)?vm.sp:vm.cosp)>>10)
+					,(ui.auplaytime>>16)+(ui.auplayptr>>26),vm.videotime);
+				}else
+				{
+
+				  static int lastpage=0;
+				  if(lastpage!=vm.visiblepage)
+				  {
+					lastpage=vm.visiblepage;
+					ui.framecounter++;
+					if(ui.opt_nonrealtime) nrtframestep();
+				  }
+				}
+				if(t>=120+ui.bmtime)
+				{
+				  float secs=(t-ui.bmtime)/60.0;
+				  ui.mops=ui.cyclecounter/(secs*1000000);
+				  ui.fps=ui.framecounter/secs;
+				  ui.cyclecounter=ui.framecounter=0;
+				  ui.bmtime=t;
+				}
+				if(ui.runstat==0)
+				{
+					//printf("runstat OFF playback %d \n",ui.opt_playback);
+				  if(ui.opt_playback)
+
+
+				  {
+						//pollplaybackevent(&e);
+						if(ui.opt_nonrealtime) nrtframestep();
+
+
+
+
+						//  int test=SDL_PollEvent(&e);
+					/*e.type=SDL_NOEVENT;
+
+					SDL_PollEvent(&e);
+					if(e.type==SDL_NOEVENT)
+					  pollplaybackevent(&e);*/
+					//if(!test && ui.opt_nonrealtime)
+					 // nrtframestep();
+				  }
+				}
+				else
+				{//runstat=1
+					//printf("runstat ON playback %d realtime=%d \n",ui.opt_playback,ui.opt_nonrealtime);
+					//int test=SDL_PollEvent(&e);
+
+
+
+					//if(ui.opt_playback )	pollplaybackevent(&e);
+
+
+					if(codechanged)
+					{
+					  vm_compile(ed_getprogbuf());
+					  if(ui.audio_off)
+					  {
+						ui.audio_off=0;
+						pauseaudio(0);
+					  }
+					  codechanged=0;
+					}
+					{
+					  int c = vm_run();
+					  ui.cyclecounter+=c;
+					}
+					if(ui.opt_nonrealtime)
+					{
+					  dumper.subframe++;
+					  if(!(dumper.subframe&4095)) nrtframestep();
+					}
+					checkmediaformats();
+					scheduler_check();
+
+					//continue;
+
+				}
+				//printf("waitEVENT......\n");
+				/*
+				while ( SDL_PollEvent(&e) ) // Nous traitons les événements de la queue
+				   {///lala
+					printf("EVENT......\n");
+
+				   }
+			*/
+
+				if(e.type==SDL_QUIT) {
+
+
+					exit_request=1;
+					break;
+				}
+				if(e.type==SDL_KEYDOWN)
+				{
+					//printf("KEY_DOWN");
+				  int sym=e.key.keysym.sym;
+				  int mod=e.key.keysym.mod;
+
+				  printf("scan %s\n",SDL_GetScancodeName(e.key.keysym.sym));
+				  printf("Physical %s key acting as %s key",
+				        SDL_GetScancodeName(e.key.keysym.scancode),
+				        SDL_GetKeyName(e.key.keysym.sym));
+
+
+				  if(ui.opt_dumpkeys)
+				  {
+					static int last=0;
+					int now=getticks();
+					if(!sym && e.key.keysym.scancode)
+						 sym=e.key.keysym.scancode;
+					printf("%d %d %d %d\n",now-last,sym,
+					  e.key.keysym.scancode,mod);
+					last=now;
+				  }
+				  //printf("getkeystates \n");//analyse
+				  getkeystates();
+
+
+				  if(sym==SDLK_ESCAPE) break;
+				  else
+				  if(sym==SDLK_TAB)
+				  {
+					ui.osd_visible^=1;
+				  }
+				  else
+				  if(sym==SDLK_F1)
+				  {
+					  printf("F1\n");//analyse
+					pauseaudio(ui.runstat);
+					ui.runstat^=1;
+					if(ui.runstat==0)
+					{
+					  ui.paused_since=getticks();
+					} else
+					{
+					  ui.timercorr+=getticks()-ui.paused_since;
+					  ui.mops=ui.fps=ui.bmtime=0;
+					}
+				  }
+				  else
+				  if(sym==SDLK_F2)
+				  {
+					ui.timercorr=ui.paused_since=getticks();
+					if(codechanged)
+					{
+					  vm_compile(ed_getprogbuf());
+					  codechanged=0;
+					}
+					vm_init();
+					ui.auplayptr=ui.auplaytime=0;
+					pauseaudio(ui.runstat^1);
+				  }
+				  else
+				  if(ui.osd_visible)
+				  {
+					  printf("touche %c\n",SDL_GetKeyName(sym));
+					/* editor keys */
+
+					if(sym==SDLK_UP && (mod&KMOD_CTRL))
+					{
+					  ed_increment(ed.cursor);
+					  codechanged=1;
+					}
+					else
+					if(sym==SDLK_DOWN && (mod&KMOD_CTRL))
+					{
+					  ed_decrement(ed.cursor);
+					  codechanged=1;
+					}
+					else
+					if(sym==SDLK_LEFT && (mod&KMOD_CTRL))
+					{
+					  ed_prev();
+					}
+					else
+					if(sym==SDLK_RIGHT && (mod&KMOD_CTRL))
+					{
+					  ed_next();
+					}
+					else
+					if(sym==SDLK_LEFT)
+					{
+					  ed_left(mod&KMOD_SHIFT);
+					}
+					else
+					if(sym==SDLK_RIGHT)
+					{
+					  ed_right(mod&KMOD_SHIFT);
+					}
+					else
+					if(sym==SDLK_UP)
+					{
+					  ed_up(mod&KMOD_SHIFT);
+					}
+					else
+					if(sym==SDLK_DOWN)
+					{
+					  ed_down(mod&KMOD_SHIFT);
+					}
+					else
+					if(sym==SDLK_BACKSPACE)
+					{
+					  ed_backspace(-1);
+					  codechanged=1;
+					}
+					else
+					if(sym==SDLK_DELETE)
+					{
+					  ed_backspace(0);
+					  codechanged=1;
+					}
+					else
+					if(sym==SDLK_F12)
+					{
+					  ed_switchbuffers();
+					}
+					else
+					if(SDL_GetKeyName(sym)=='S' && (mod&KMOD_CTRL))
+					{
+
+					  ed_save();
+					}
+					else
+					if(sym=='c' && (mod&KMOD_CTRL))
+					{
+					  ed_copy();
+					}
+					else
+					if(sym=='k' && (mod&KMOD_CTRL))
+					{
+					  ed_copy();
+					}
+					else
+					if(sym=='v' && (mod&KMOD_CTRL))
+					{
+					  ed_paste();
+					}
+					else
+					if(sym=='x' && (mod&KMOD_CTRL))
+					{
+					  ed_cut();
+					}
+					else
+					if(sym=='a' && (mod&KMOD_CTRL))
+					{
+					  if(ed.selectbase) ed_unselect();
+						else
+					  {
+						ed.selectstart=ed.textbuffer;
+						ed.selectend=ed.textbuffer+strlen(ed.textbuffer);
+						ed.selectbase=ed.cursor;
+					  }
+					}
+					else
+					if(sym=='b' && (mod&KMOD_CTRL))
+					{
+					  ui.benchmark_mode^=1;
+					}
+					else
+					{
+					  //if(e.key.keysym.scancode)
+					if(SDL_GetKeyName(e.key.keysym.sym))
+					  {//tous les autres caracteres
+						printf("ecriture");
+						//getkeystates();
+						//ed_char(e.key.keysym.scancode);
+						ed_char(e.key.keysym.sym);
+						codechanged=1;
+					  }
+					}
+				  }
+				}
+				else if(e.type==SDL_KEYUP)
+				{
+
+				  getkeystates();
+				}
+				else if(e.type==SDL_MOUSEMOTION)
+				{
+				  int y=(e.motion.y*256)/sdl.winsz;
+				  int x=(e.motion.x*256)/sdl.winsz;
+				  if(y>=0 && x>=0 && y<=255 && x<=255)
+					vm.userinput=(vm.userinput&0xFFFF0000)|(y<<8)|x;
+				}
+				else if(e.type==SDL_MOUSEBUTTONDOWN)
+				{
+				  vm.userinput|=0x80000000;
+				}
+				else if(e.type==SDL_MOUSEBUTTONUP)
+				{
+				  vm.userinput&=0x7FFFFFFF;
+				}
+				/*else if(e.type==SDL_VIDEORESIZE)
+				{
+				  sdl.winsz=e.resize.w<e.resize.h?e.resize.w:e.resize.h;
+				  sdl.xmargin=(e.resize.w-sdl.winsz)/2;
+				  sdl.ymargin=(e.resize.h-sdl.winsz)/2;
+
+				  SDL_FreeSurface(sdl.s);
+				  sdl.s=SDL_SetVideoMode(e.resize.w,e.resize.h,0,SDL_RESIZABLE);
+				  SDL_FreeYUVOverlay(sdl.o);
+				  sdl.o=SDL_CreateYUVOverlay(256,256,SDL_YUY2_OVERLAY,sdl.s);
+				  SDL_WM_SetCaption("IBNIZ","IBNIZ");
+
+				  showyuv();
+				}*/
+				else if(e.type==SDL_WINDOWEVENT)
+				{
+					switch (e.window.event) {
+					case SDL_WINDOWEVENT_RESIZED:
+						/*SDL_Log("Window %d resized to %dx%d",
+								event->window.windowID, event->window.data1,
+								event->window.data2);
+						*/
+						//sdl.winsz=e.
+						printf("redimensionnement de la fenetre\n");
+						break;
+
+
+					}
+				}
+
+           }
 /*
     #ifdef X11
     else if(e.type==SDL_SYSWMEVENT)
@@ -1113,7 +1177,10 @@ void interactivemode(char*codetoload)
     }
 #endif
 */
+    if (exit_request)break;
   }
+
+
 }
 
 int main(int argc,char**argv)
@@ -1131,7 +1198,6 @@ int main(int argc,char**argv)
   ui.opt_nonrealtime=0;
   ui.opt_playback=0;
   ui.opt_dumpmedia=0;
-  ui.opt_nonrealtime=0;
   ui.osd_visible=1;
   argv++;
   while(*argv)
@@ -1194,7 +1260,6 @@ int main(int argc,char**argv)
   SDL_Init(SDL_INIT_VIDEO|SDL_INIT_AUDIO);
 
   sdl.winsz=512;
-  //sdl.s=SDL_SetVideoMode(sdl.winsz,sdl.winsz,0,SDL_RESIZABLE);
   printf("Creation de la fenetre \n");//analyse
   sdl.s= SDL_CreateWindow("IBNIZ",
                             SDL_WINDOWPOS_UNDEFINED,
@@ -1206,10 +1271,11 @@ int main(int argc,char**argv)
   SDL_SetHint(SDL_HINT_RENDER_SCALE_QUALITY, "linear");  // permet d'obtenir les redimensionnements plus doux.
   SDL_RenderSetLogicalSize(sdl.r, 256, 256);
 
-  //sdl.o=SDL_CreateYUVOverlay(256,256,SDL_YUY2_OVERLAY,sdl.s);
-  pixels = (Uint32*) malloc(256*256*sizeof(Uint32));
 
-  sdl.o=SDL_CreateTexture(sdl.r,SDL_PIXELFORMAT_IYUV,SDL_TEXTUREACCESS_STREAMING,256, 256);
+  printf("Creation de la texture \n");//analyse
+  pixels = (Uint32*) malloc(256*256*sizeof(Uint32));
+  //sdl.o=SDL_CreateTexture(sdl.r,SDL_PIXELFORMAT_IYUV,SDL_TEXTUREACCESS_STREAMING,256, 256);
+  sdl.o=SDL_CreateTexture(sdl.r,SDL_PIXELFORMAT_YUY2,SDL_TEXTUREACCESS_STREAMING,256, 256);
 
  
   {SDL_AudioSpec as;
@@ -1222,15 +1288,18 @@ int main(int argc,char**argv)
    DEBUG(stderr,"buffer size: %d\n",as.samples);
   }
   
+  printf("compilationVM \n");//analyse
+
   vm_compile(codetoload);
   ui.runstat=(autorun==1)?1:0;
   if(autorun==1) ui.osd_visible=0;
   ui.timercorr=ui.paused_since=getticks();
   vm_init();
   pauseaudio(ui.runstat^1);
+  printf("interactive mode \n");//analyse
   interactivemode(codetoload);
   
-
+  printf("Bye Bye IBNIZ \n");//analyse
   //SDL_Quit();
   //new
   SDL_DestroyRenderer(sdl.r);
