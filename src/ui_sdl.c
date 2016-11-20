@@ -1,7 +1,7 @@
 #ifdef __APPLE__
 #include <SDL.h>//TODO SDL2 apple
 #else
-#include </usr/include/SDL2/SDL.h>
+#include <SDL2/SDL.h>//with eclipse #include </usr/include/SDL2/SDL.h>
 #endif
 #define IBNIZ_MAIN
 #include "ibniz.h"
@@ -1147,12 +1147,6 @@ void interactivemode(char*codetoload)
 int main(int argc,char**argv)
 {
 
-
-
-
-
-
-	printf("Bonjour ui_sdl:main \n");//analyse
   signed char autorun=-1;
   char*codetoload = welcometext;
   ui.opt_dumpkeys=0;
@@ -1221,13 +1215,13 @@ int main(int argc,char**argv)
   SDL_Init(SDL_INIT_VIDEO|SDL_INIT_AUDIO);
 
   sdl.winsz=512;
-  printf("Creation de la fenetre \n");//analyse
+
   sdl.s= SDL_CreateWindow("IBNIZ",
                             SDL_WINDOWPOS_UNDEFINED,
                             SDL_WINDOWPOS_UNDEFINED,
 							sdl.winsz, sdl.winsz,
 							SDL_WINDOW_RESIZABLE | SDL_WINDOW_OPENGL);
-  printf("Creation du renderer \n");//analyse
+
   sdl.r = SDL_CreateRenderer(sdl.s, -1, 0);
   SDL_SetHint(SDL_HINT_RENDER_SCALE_QUALITY, "linear");  // permet d'obtenir les redimensionnements plus doux.
   SDL_RenderSetLogicalSize(sdl.r, 256, 256);
