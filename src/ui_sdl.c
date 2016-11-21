@@ -1215,13 +1215,13 @@ int main(int argc,char**argv)
 							SDL_WINDOW_RESIZABLE | SDL_WINDOW_OPENGL);
 
   sdl.r = SDL_CreateRenderer(sdl.s, -1, 0);
-  SDL_SetHint(SDL_HINT_RENDER_SCALE_QUALITY, "linear");  // permet d'obtenir les redimensionnements plus doux.
+  SDL_SetHint(SDL_HINT_RENDER_SCALE_QUALITY, "linear");  
   SDL_RenderSetLogicalSize(sdl.r, 256, 256);
 
 
   printf("Creation de la texture \n");//analyse
   pixels = (Uint32*) malloc(256*256*sizeof(Uint32));
-  //sdl.o=SDL_CreateTexture(sdl.r,SDL_PIXELFORMAT_IYUV,SDL_TEXTUREACCESS_STREAMING,256, 256);
+ 
   sdl.o=SDL_CreateTexture(sdl.r,SDL_PIXELFORMAT_YUY2,SDL_TEXTUREACCESS_STREAMING,256, 256);
 
  
@@ -1235,7 +1235,7 @@ int main(int argc,char**argv)
    DEBUG(stderr,"buffer size: %d\n",as.samples);
   }
   
-  printf("compilationVM \n");//analyse
+ 
 
   vm_compile(codetoload);
   ui.runstat=(autorun==1)?1:0;
@@ -1243,7 +1243,7 @@ int main(int argc,char**argv)
   ui.timercorr=ui.paused_since=getticks();
   vm_init();
   pauseaudio(ui.runstat^1);
-  printf("interactive mode \n");//analyse
+
   interactivemode(codetoload);
   
   printf("Bye Bye IBNIZ \n");//analyse
