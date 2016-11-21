@@ -205,13 +205,14 @@ void drawStatusPanel()
 
 void showyuv()
 {
-
-	//printf("showYUV \n");//analyse
+int ti=  SDL_GetTicks();
+	
 	SDL_UpdateTexture(sdl.o, NULL, pixels, (256/2) * sizeof (Uint32));
 
 	SDL_RenderClear(sdl.r);
 	SDL_RenderCopy(sdl.r, sdl.o, NULL, NULL);
 	SDL_RenderPresent(sdl.r);
+     printf("delay %d\n",SDL_GetTicks()-ti);
 }
 
 void updatescreen()
@@ -824,7 +825,7 @@ void interactivemode(char*codetoload)
 
     uint32_t t = gettimevalue();
     int SDL_NOEVENT=1;
-    updatescreen();
+//    updatescreen();
     while ( SDL_PollEvent(&e) ) // process event
            {
     			SDL_NOEVENT=0;
@@ -1212,7 +1213,14 @@ int main(int argc,char**argv)
                             SDL_WINDOWPOS_UNDEFINED,
                             SDL_WINDOWPOS_UNDEFINED,
 							sdl.winsz, sdl.winsz,
+							SDL_WINDOW_RESIZABLE| SDL_WINDOW_OPENGL );
+   /*
+    sdl.s= SDL_CreateWindow("IBNIZ",
+                            SDL_WINDOWPOS_UNDEFINED,
+                            SDL_WINDOWPOS_UNDEFINED,
+							sdl.winsz, sdl.winsz,
 							SDL_WINDOW_RESIZABLE | SDL_WINDOW_OPENGL);
+                             */
 
   sdl.r = SDL_CreateRenderer(sdl.s, -1, 0);
   SDL_SetHint(SDL_HINT_RENDER_SCALE_QUALITY, "linear");  
