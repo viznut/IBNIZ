@@ -205,14 +205,14 @@ void drawStatusPanel()
 
 void showyuv()
 {
-int ti=  SDL_GetTicks();
+
 	
 	SDL_UpdateTexture(sdl.o, NULL, pixels, (256/2) * sizeof (Uint32));
 
 	SDL_RenderClear(sdl.r);
 	SDL_RenderCopy(sdl.r, sdl.o, NULL, NULL);
 	SDL_RenderPresent(sdl.r);
-     printf("delay %d\n",SDL_GetTicks()-ti);
+   
 }
 
 void updatescreen()
