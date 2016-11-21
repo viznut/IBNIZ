@@ -864,6 +864,9 @@ void interactivemode(char*codetoload)
 				  }
 
 				  getkeystates();
+                  
+                  
+                  if(sym==SDLK_RETURN)ed_char('\n');
 
 
 				  if(sym==SDLK_ESCAPE) break;
@@ -983,7 +986,6 @@ void interactivemode(char*codetoload)
 					else
 					if(SDL_GetKeyName(sym)[0]=='V' && (mod&KMOD_CTRL))
 					{
-						printf("COLLE");
 					  ed_paste();
 					}
 					else
@@ -1084,11 +1086,9 @@ void interactivemode(char*codetoload)
         if(ui.runstat==0)
         {
           if(ui.opt_playback)
-            //printf("playback");//SDL_WaitEvent(&e);
-          //else
+
           {
-            //e.type=SDL_NOEVENT;
-            //SDL_PollEvent(&e);
+            
             if(SDL_NOEVENT)
               pollplaybackevent(&e);
             if(SDL_NOEVENT && ui.opt_nonrealtime)
@@ -1097,8 +1097,7 @@ void interactivemode(char*codetoload)
         }
         else
         {
-          //e.type=SDL_NOEVENT;
-          //SDL_PollEvent(&e);
+       
           if(ui.opt_playback && SDL_NOEVENT)
             pollplaybackevent(&e);
           if(SDL_NOEVENT)
@@ -1129,15 +1128,8 @@ void interactivemode(char*codetoload)
     }
 
 
-    //printf("delay %d\n",(gettimevalue()-t));
-/*
-    #ifdef X11
-    else if(e.type==SDL_SYSWMEVENT)
-    {
-      clipboard_handlesysreq(&e);
-    }
-#endif
-*/
+  ///printf("delay %d\n",(gettimevalue()-t));
+
     if (exit_request)break;
   }
 
