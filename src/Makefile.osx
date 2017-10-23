@@ -1,6 +1,6 @@
-C  = gcc
+C  = cc
 EXE = ibniz
-SRC = ui_sdl.c vm_slow.c clipboard.c
+SRC = ui_sdl.c vm_slow.c clipboard.c compiler.c
 OBJ = $(SRC:.c=.o)
 
 CFLAGS  = -O2 -Wall `sdl-config --cflags`
