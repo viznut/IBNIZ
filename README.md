@@ -14,3 +14,41 @@ alt="Demo Video" width="240" height="180" border="10" /></a>
 * Community: `#countercomplex` @ IRCnet
 
 See also a [related blog post](http://countercomplex.blogspot.com/2011/12/ibniz-hardcore-audiovisual-virtual.html).
+
+## Building
+
+### Linux
+
+Prerequisites:
+* [SDL](https://www.libsdl.org) v1.2.x
+
+Run these commands:
+```
+cd src
+make
+```
+
+### MacOS
+
+Prerequisites:
+* Apple developer tools (installed with Xcode)
+* [SDL](https://www.libsdl.org) v1.2.x
+** An easy way to get SDL is via [Homebrew](https://brew.sh) `brew install sdl`
+
+Run these commands:
+```
+cd src
+make -f Makefile.osx
+```
+
+### Windows
+
+Prerequisites:
+* [MinGW](http://www.mingw.org)
+* [SDL](https://www.libsdl.org) v1.2.x
+
+Run these commands:
+```
+cd src
+make -f Makefile.win
+```
