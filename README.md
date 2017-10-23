@@ -32,8 +32,7 @@ make
 
 Prerequisites:
 * Apple developer tools (installed with Xcode)
-* [SDL](https://www.libsdl.org) v1.2.x
-** An easy way to get SDL is via [Homebrew](https://brew.sh) `brew install sdl`
+* [SDL](https://www.libsdl.org) v1.2.x (an easy way to get SDL is via [Homebrew](https://brew.sh) `brew install sdl`)
 
 Run these commands:
 ```
