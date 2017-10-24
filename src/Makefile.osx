@@ -1,4 +1,4 @@
-C  = cc
+CC  = cc
 EXE = ibniz
 SRC = ui_sdl.c vm_slow.c clipboard.c compiler.c
 OBJ = $(SRC:.c=.o)
@@ -32,3 +32,5 @@ font.i: font.pl
 runtest: vmtest
 	./vmtest
 
+ibniz2c: ibniz2c.c compiler.c gen_c.c
+	$(CC) -DIBNIZ2C -Os compiler.c ibniz2c.c -o ibniz2c -lm
