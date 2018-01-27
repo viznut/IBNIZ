@@ -295,7 +295,7 @@ void getkeystates()
 
 /*** audio-related ***/
 
-void pauseaudio(s)
+void pauseaudio(char s)
 {
   if(!ui.opt_nonrealtime)
     SDL_PauseAudio(s);
