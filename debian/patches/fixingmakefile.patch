@@ -1,0 +1,37 @@
+Description: Added hardening flags and fixed a compiler reference.
+ Hardening flags according to https://wiki.debian.org/Hardening
+Author: maxigas <maxigas@anargeek.net>
+Forwarded: no
+Last-Update: <2013-09-23>
+
+Index: ibniz-1.18/Makefile
+===================================================================
+--- ibniz-1.18.orig/Makefile	2013-09-23 01:30:34.000000000 +0200
++++ ibniz-1.18/Makefile	2013-09-23 01:38:34.000000000 +0200
+@@ -26,16 +26,16 @@
+ #	cat ui_sdl.c vm_slow.c clipboard.c > whole.c
+ 
+ $(EXE): ui_sdl.o vm_slow.o clipboard.o
+-	$(CC) -Os -s ui_sdl.o vm_slow.o clipboard.o -o $(EXE) $(FLAGS) -lm
++	$(CC) -Os -s ui_sdl.o vm_slow.o clipboard.o -o $(EXE) $(FLAGS) $(LDFLAGS) -lm
+ 
+ ui_sdl.o: ui_sdl.c ibniz.h font.i vm.h texts.i vm.h
+-	$(CC) -c -Os ui_sdl.c -o ui_sdl.o $(FLAGS)
++	$(CC) -c -Os ui_sdl.c -o ui_sdl.o $(FLAGS) $(CFLAGS) $(CPPFLAGS) 
+ 
+ clipboard.o: clipboard.c ibniz.h
+-	$(CC) -c -Os clipboard.c -o clipboard.o $(FLAGS)
++	$(CC) -c -Os clipboard.c -o clipboard.o $(FLAGS) $(CFLAGS) $(CPPFLAGS) 
+ 
+ vm_slow.o: vm_slow.c ibniz.h vm.h
+-	$(CC) -c -O3 vm_slow.c -o vm_slow.o
++	$(CC) -c -O3 vm_slow.c -o vm_slow.o $(CFLAGS) $(CPPFLAGS) 
+ 
+ font.i: font.pl
+ 	perl font.pl > font.i
+@@ -44,4 +44,4 @@
+ 	./vmtest
+ 
+ vmtest: vm_test.c vm_slow.c
+-	gcc vm_test.c vm_slow.c -o vmtest -lm
++	$(CC) vm_test.c vm_slow.c -o vmtest -lm $(CFLAGS) $(CPPFLAGS)
