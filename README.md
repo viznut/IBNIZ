@@ -10,10 +10,10 @@ alt="Demo Video" width="240" height="180" border="10" /></a>
 
 * [Demo video](https://www.youtube.com/watch?v=aKMrBaXJvMs)
 * [Documentation](src/ibniz.txt)
-* [Web site](http://pelulamu.net/ibniz/)
+* [Web site](http://viznut.fi/ibniz/)
 * Community: `#countercomplex` @ IRCnet
-
-See also a [related blog post](http://countercomplex.blogspot.com/2011/12/ibniz-hardcore-audiovisual-virtual.html).
+* [Javascript implementation] (http://ibniz.breizh-entropy.org/) ([git](https://github.com/asiekierka/ibnjs))
+* [Another Javascript implementation] (https://flupe.github.io/jibniz/) ([git](https://github.com/flupe/jibniz))
 
 ## Building
 
