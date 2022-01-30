@@ -4,7 +4,7 @@
 </head>
 <body>
 <!-- previously http://ibniz.asiekierka.pl/ibniz.html, recovered from https://web.archive.org/web/20120123023447/http://ibniz.asiekierka.pl/ibniz.html -->
-<canvas id="ibniz" width="256" height="256">
+<canvas id="ibniz" width="256" height="128">
 Why u no canvas
 </canvas><br>
 <form>
@@ -914,7 +914,7 @@ function derp()
 		if(halfRes.checked)
 		{
 			p.render2(c2);
-			c.drawImage(cc2,0,0,128,128,0,0,256,256);
+			c.drawImage(cc2,0,0,128,128,0,0,256,128);
 		}
 		else p.render(c);
 		var newloop = new Date;
