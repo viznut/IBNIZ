@@ -180,6 +180,7 @@ void clipboard_handlesysreq(SDL_Event*e)
     res.xselection.type=SelectionNotify;
     res.xselection.display=clipbrd.swi.info.x11.display;
     res.xselection.requestor=req->requestor;
+    res.xselection.selection=req->selection;
     res.xselection.target=req->target;
     res.xselection.time=req->time;
     XSendEvent(clipbrd.swi.info.x11.display,req->requestor,0,0,&res);
