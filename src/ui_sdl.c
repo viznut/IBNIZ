@@ -664,8 +664,11 @@ void ed_deleteselection()
   ed_unselect();
 }
 
-void ed_backspace(int offset)
+int ed_backspace(int offset)
 {
+  if (ed.readonly)
+    return 0;
+
   if(ed.selectend>ed.selectstart)
     ed_deleteselection();
   else
@@ -676,6 +679,7 @@ void ed_backspace(int offset)
       for(;*s;s++)*s=s[1];
     }
   }
+  return 1;
 }
 
 void ed_save()
@@ -978,14 +982,12 @@ void interactivemode(char*codetoload)
         else
         if(sym==SDLK_BACKSPACE)
         {
-          ed_backspace(-1);
-          codechanged=1;
+          codechanged|=ed_backspace(-1);
         }
         else
         if(sym==SDLK_DELETE)
         {
-          ed_backspace(0);
-          codechanged=1;
+          codechanged|=ed_backspace(0);
         }
         else
         if(sym==SDLK_F12)
