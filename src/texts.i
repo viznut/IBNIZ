@@ -35,7 +35,11 @@ char*helpscreen=
 "shift+cursor .... select area\n"
 "ctrl+left/right . jump by words "
 "ctrl+up/down .... inc/dec number"
+#ifdef SDL_PLATFORM_MACOS
+"cmd+x/c/v ....... cut/copy/paste"
+#else
 "ctrl+x/c/v ...... cut/copy/paste"
+#endif
 "\n"
 "======== IBNIZ language ========"
 "\n"

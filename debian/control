@@ -2,7 +2,7 @@ Source: ibniz
 Section: graphics
 Priority: optional
 Maintainer: maxigas <maxigas@anargeek.net>
-Build-Depends: debhelper (>= 9), libsdl1.2-dev, python-docutils, perl
+Build-Depends: debhelper (>= 9), libsdl3-dev (>= 3.2), pkg-config, python-docutils, perl
 Standards-Version: 3.9.4
 Homepage: http://pelulamu.net/ibniz/
 #Vcs-Git: git://git.debian.org/collab-maint/ibniz.git

@@ -382,14 +382,14 @@ void popsv(gsv_t*ret)
 
 /*** user-callable ***/
 
-flushstack()
+void flushstack()
 {
   gen_flushpartialstack(gen.gsp+1);
 }
 
 /* stack ops */
 
-gen_pop()
+void gen_pop()
 {
   if(gen.gsp>=0)
     gen.gsp--;
@@ -397,7 +397,7 @@ gen_pop()
     gen_pop_noreg();
 }
 
-gen_dup()
+void gen_dup()
 {
   if(gen.gsp>=0)
   {
@@ -410,7 +410,7 @@ gen_dup()
   }
 }
 
-gen_swap()
+void gen_swap()
 {
   gsv_t v1,v0;
   popsv(&v0);
@@ -419,7 +419,7 @@ gen_swap()
   growstack(v1.type,v1.val);
 }
 
-gen_trirot()
+void gen_trirot()
 {
   gsv_t v2,v1,v0;
   popsv(&v0);
@@ -430,17 +430,17 @@ gen_trirot()
   growstack(v2.type,v2.val);
 }
 
-gen_pick()
+void gen_pick()
 {
 }
 
-gen_bury()
+void gen_bury()
 {
 }
 
 /* loadimm */
 
-gen_loadimm(int val)
+void gen_loadimm(int val)
 {
   growstack(GSV_ABS,val);
 }
@@ -497,7 +497,7 @@ void unop_getsv(gsv_t*t,gsv_t*s)
 }
 
 #define BINOP_C(name,immimm) \
-gen_##name () \
+void gen_##name () \
 { \
   gsv_t t,s1,s0; \
   binop_getsv(&t,&s1,&s0,1); \
@@ -517,7 +517,7 @@ gen_##name () \
 }
 
 #define BINOP_NC(name,immimm) \
-gen_##name () \
+void gen_##name () \
 { \
   gsv_t t,s1,s0; \
   binop_getsv(&t,&s1,&s0,0); \
@@ -557,7 +557,7 @@ BINOP_NC(shl,IBNIZ_SHL(i1,i0))
 BINOP_NC(atan2,IBNIZ_ATAN2(i1,i0))
 
 #define UNOP(name,imm) \
-gen_##name () \
+void gen_##name () \
 { \
   gsv_t t,s; \
   unop_getsv(&t,&s); \
@@ -599,7 +599,7 @@ UNOP(iszero,IBNIZ_ISZERO(i));
 // A { xxx }
 */
 
-gen_if(int skipto)
+void gen_if(int skipto)
 {
   gsv_t cond;
   popsv(&cond);
@@ -613,20 +613,20 @@ gen_if(int skipto)
   }
 }
 
-gen_else(int skipto)
+void gen_else(int skipto)
 {
   flushstack();
   gen_jmp_lab(skipto);
   gen_label(gen.srcidx+1);
 }
 
-gen_endif()
+void gen_endif()
 {
   flushstack();
   gen_label(gen.srcidx+1);
 }
 
-gen_load()
+void gen_load()
 {
   int r;
   gsv_t address;
@@ -639,7 +639,7 @@ gen_load()
     gen_load_reg_imm(r,address.val);
 }
 
-gen_store()
+void gen_store()
 {
   int r;
   gsv_t address;
@@ -661,7 +661,7 @@ gen_store()
   }
 }
 
-gen_do()
+void gen_do()
 {
   flushstack();
   gen_rpush_lab(gen.srcidx+1);
@@ -671,13 +671,15 @@ gen_do()
   // analyzer will unroll small immediate loops
 }
 
-gen_times()
+void gen_rpush();
+
+void gen_times()
 {
   gen_rpush();
   gen_do();
 }
 
-gen_while()
+void gen_while()
 {
   gsv_t cond;
   popsv(&cond);
@@ -699,7 +701,7 @@ gen_while()
   }
 }
 
-gen_loop()
+void gen_loop()
 {
   /*
   in c:
@@ -711,7 +713,7 @@ gen_loop()
   */
 }
 
-gen_rpush()
+void gen_rpush()
 {
   gsv_t v;
   popsv(&v);
@@ -721,7 +723,7 @@ gen_rpush()
     gen_rpush_imm(v.val);
 }
 
-gen_defsub()
+void gen_defsub()
 {
   /*
   in c:
@@ -732,7 +734,7 @@ gen_defsub()
   */
 }
 
-gen_return()
+void gen_return()
 {
   /*
   flushstack();
@@ -742,14 +744,14 @@ gen_return()
   */
 }
 
-gen_rpop()
+void gen_rpop()
 {
   int r=allocreg();
   growstack(GSV_REG,r);
   gen_rpop_reg(r);
 }
 
-gen_whereami()
+void gen_whereami()
 {
   // todo should also update ivars according to sp
   int t=allocreg();
@@ -763,7 +765,7 @@ gen_whereami()
   gen_mov_reg_ivar(x,IVAR_X);
 }
 
-gen_tyxloop_init()
+void gen_tyxloop_init()
 {
   gen.gsp=-1;
   // store treg0 yreg0 xreg0 to ensure loopability
@@ -785,7 +787,7 @@ gen_tyxloop_init()
 
 // real whereami can use any regs
 
-gen_tyxloop_iterator()
+void gen_tyxloop_iterator()
 {
   int t,y,x;
   flushstack();
@@ -804,7 +806,7 @@ gen_tyxloop_iterator()
 }
 
 
-gen_finish()
+void gen_finish()
 {
   flushstack();
   //gen_tyxloop_iterator();

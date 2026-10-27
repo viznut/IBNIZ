@@ -398,6 +398,8 @@ EDITOR COMMANDS
         ESC exits the program.
 
         Ctrl+C/X/V/A work as copy/cut/paste/selectall.
+        On macOS, Command+C/X/V/A also work. Copy and paste use the system
+        clipboard, including expressions copied from other applications.
 
         Ctrl+S saves the program to the file indicated by a line beginning
         with '\#file' (or if there's no such line, inserts the line
@@ -529,4 +531,3 @@ Tasks in an approximate order of priority:
 - Native version for MS-DOS, ibniz-to-c64 compiler etc.
 
 Once we have all of these, we may call the version number 2.0.
-

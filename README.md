@@ -20,7 +20,8 @@ alt="Demo Video" width="240" height="180" border="10" /></a>
 ### Linux
 
 Prerequisites:
-* [SDL](https://www.libsdl.org) v1.2.x
+* [SDL3](https://www.libsdl.org) development files (3.2 or later)
+* `pkg-config`, a C compiler, Make, and Perl
 
 Run these commands:
 ```
@@ -32,7 +33,8 @@ make
 
 Prerequisites:
 * Apple developer tools (installed with Xcode)
-* [SDL](https://www.libsdl.org) v1.2.x (an easy way to get SDL is via [Homebrew](https://brew.sh) `brew install sdl`)
+* [SDL3](https://www.libsdl.org) (3.2 or later) and `pkg-config`
+  (via [Homebrew](https://brew.sh): `brew install sdl3 pkgconf`)
 
 Run these commands:
 ```
@@ -43,11 +45,23 @@ make -f Makefile.osx
 ### Windows
 
 Prerequisites:
-* [MinGW](http://www.mingw.org)
-* [SDL](https://www.libsdl.org) v1.2.x
+* [MSYS2](https://www.msys2.org/) with a MinGW toolchain, Make, and Perl
+* [SDL3](https://www.libsdl.org) development files (3.2 or later) and `pkg-config`
+  for the same MinGW environment (for UCRT64, install
+  `mingw-w64-ucrt-x86_64-gcc mingw-w64-ucrt-x86_64-sdl3 mingw-w64-ucrt-x86_64-pkgconf make perl`)
 
-Run these commands:
+Run these commands in the matching MSYS2 MinGW shell:
 ```
 cd src
 make -f Makefile.win
 ```
+
+Keep the matching `SDL3.dll` beside `ibniz.exe` or on `PATH`.
+
+All makefiles use `pkg-config sdl3` to find SDL3. For a custom installation,
+set `PKG_CONFIG_PATH` to its pkg-config directory. SDL 1.2 and SDL2 are not used.
+
+### Tests
+
+Run `make -C src runtest runuitest` for the VM tests and headless SDL3
+rendering, audio, editor, clipboard, and input checks.

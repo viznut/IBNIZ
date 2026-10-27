@@ -1,21 +1,15 @@
-# For normal builds; remove -DX11 -lX11 from flags if you don't have X11
-#CC=gcc
-EXE=ibniz
+EXE ?= ibniz
+PKG_CONFIG ?= pkg-config
 
-CPPFLAGS=-DX11
-LDFLAGS=`sdl-config --libs` -lX11 -s
-CFLAGS=`sdl-config --cflags`
+SDL_CFLAGS = $(shell $(PKG_CONFIG) --cflags sdl3)
+SDL_LIBS = $(shell $(PKG_CONFIG) --libs sdl3)
+CFLAGS ?= -O2
+LDLIBS += -lm
 
-all: ibniz
-
-# For win32 builds using mingw32 (you'll probably need to modify these)
-#CC=i586-mingw32msvc-gcc
-#EXE=ibniz.exe
-#FLAGS=-L./SDL-1.2.14/lib -I./SDL-1.2.14/include -static -lmingw32 SDL-1.2.14/lib/libSDL.a SDL-1.2.14/lib/libSDLmain.a -mwindows -lwinmm
-#all: ibniz.exe
+all: $(EXE)
 
 clean:
-	rm -f *.o *~ ibniz vmtest ibniz.exe whole.c
+	rm -f *.o *~ ibniz vmtest uitest ibniz2c ibniz.exe whole.c
 
 package: clean
 	cd .. && cp -R src ibniz-1.18 && tar czf ibniz-1.18.tar.gz ibniz-1.18
@@ -23,26 +17,20 @@ package: clean
 winexe: clean
 	cp * ../winbuild && cd ../winbuild && make -f Makefile.win
 
-#$(EXE): whole.c
-#	$(CC) -s -O3 -ffast-math -fwhole-program whole.c -o $(EXE) $(FLAGS) -lm
-
-#whole.c: vm_slow.c ui_sdl.c clipboard.c texts.i font.i vm.h ibniz.h
-#	cat ui_sdl.c vm_slow.c clipboard.c > whole.c
-
 $(EXE): ui_sdl.o vm_slow.o clipboard.o compiler.o
-	$(CC) -Os ui_sdl.o vm_slow.o clipboard.o compiler.o -o $(EXE) $(LDFLAGS) -lm
+	$(CC) $^ -o $@ $(LDFLAGS) $(SDL_LIBS) $(LDLIBS)
 
 ui_sdl.o: ui_sdl.c ibniz.h font.i vm.h texts.i vm.h
-	$(CC) -c -Os ui_sdl.c -o ui_sdl.o $(CFLAGS) $(CPPFLAGS)
+	$(CC) $(CPPFLAGS) $(CFLAGS) $(SDL_CFLAGS) -c $< -o $@
 
 clipboard.o: clipboard.c ibniz.h
-	$(CC) -c -Os clipboard.c -o clipboard.o $(CFLAGS) $(CPPFLAGS)
+	$(CC) $(CPPFLAGS) $(CFLAGS) $(SDL_CFLAGS) -c $< -o $@
 
 compiler.o: compiler.c ibniz.h vm.h
-	$(CC) -c -Os compiler.c -o compiler.o $(CFLAGS) $(CPPFLAGS)
+	$(CC) $(CPPFLAGS) $(CFLAGS) -c $< -o $@
 
 vm_slow.o: vm_slow.c ibniz.h vm.h
-	$(CC) -c -O3 vm_slow.c -o vm_slow.o $(CFLAGS) $(CPPFLAGS)
+	$(CC) $(CPPFLAGS) $(CFLAGS) -c $< -o $@
 
 font.i: font.pl
 	perl font.pl > font.i
@@ -50,12 +38,20 @@ font.i: font.pl
 runtest: vmtest
 	./vmtest
 
-vmtest: vm_test.c vm_slow.c
-	gcc vm_test.c vm_slow.o -o vmtest -lm
+vmtest: vm_test.c vm_slow.o compiler.o ibniz.h vm.h
+	$(CC) $(CPPFLAGS) $(CFLAGS) vm_test.c vm_slow.o compiler.o -o $@ $(LDFLAGS) $(LDLIBS)
+
+uitest: ui_test.c ui_sdl.c vm_slow.o clipboard.o compiler.o ibniz.h vm.h texts.i font.i
+	$(CC) $(CPPFLAGS) $(CFLAGS) $(SDL_CFLAGS) ui_test.c vm_slow.o clipboard.o compiler.o -o $@ $(LDFLAGS) $(SDL_LIBS) $(LDLIBS)
+
+runuitest: uitest
+	SDL_VIDEO_DRIVER=dummy SDL_AUDIO_DRIVER=dummy SDL_RENDER_DRIVER=software ./uitest
 
 ibniz2c: ibniz2c.c compiler.c gen_c.c
-	gcc -DIBNIZ2C -Os compiler.c ibniz2c.c -o ibniz2c -lm
+	$(CC) $(CPPFLAGS) $(CFLAGS) -DIBNIZ2C compiler.c ibniz2c.c -o $@ $(LDFLAGS) $(LDLIBS)
 
 install: ${EXE}
 	install -d ${DESTDIR}/usr/bin
 	install $<  ${DESTDIR}/usr/bin/
+
+.PHONY: all clean package winexe runtest runuitest install
